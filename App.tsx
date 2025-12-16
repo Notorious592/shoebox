@@ -1,271 +1,77 @@
 
 /// <reference lib="dom" />
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Type, 
-  Image as ImageIcon, 
-  Code2, 
-  Braces, 
-  KeyRound, 
-  Fingerprint, 
-  Hash, 
   Menu,
   X,
-  QrCode,
-  FileImage, 
-  Activity,
-  FileType,
-  Stamp,
-  Scaling,
-  Crop,
-  Grid,
-  Layers,
-  FileVideo,
-  Music,
-  ImageMinus,
-  Clock,
-  Terminal,
-  Globe,
-  Gauge,
-  Network,
-  FileText,
-  Film,
-  Github
+  Code2, 
+  Github,
+  Languages,
+  ChevronDown
 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Home from './components/Home';
-import JsonFormatter from './components/tools/JsonFormatter';
-import PasswordGenerator from './components/tools/PasswordGenerator';
-import UuidGenerator from './components/tools/UuidGenerator';
-import Md5Generator from './components/tools/Md5Generator';
-import QrCodeGenerator from './components/tools/QrCodeGenerator';
-import ImageConverter from './components/tools/ImageConverter';
-import EasingVisualizer from './components/tools/EasingVisualizer';
-import MarkdownToImage from './components/tools/MarkdownToImage';
-import WatermarkGenerator from './components/tools/WatermarkGenerator';
-import ImageResizer from './components/tools/ImageResizer';
-import ImageCropper from './components/tools/ImageCropper';
-import ImageGridSlicer from './components/tools/ImageGridSlicer';
-import ImageComposition from './components/tools/ImageComposition';
-import VideoCommandGenerator from './components/tools/VideoCommandGenerator';
-import AudioConverter from './components/tools/AudioConverter';
-import BackgroundRemover from './components/tools/BackgroundRemover';
-import TimestampConverter from './components/tools/TimestampConverter';
-import CodeRunner from './components/tools/CodeRunner';
-import CheckHost from './components/tools/CheckHost';
-import SpeedTest from './components/tools/SpeedTest';
 import Logo from './components/Logo';
-import { Category, CategoryId } from './types';
+import { CategoryId } from './types';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { useTools } from './hooks/useTools';
 
-// Define the catalog of tools
-const categories: Category[] = [
-  {
-    id: CategoryId.IMAGE,
-    name: '图像',
-    icon: ImageIcon,
-    description: '提供图片压缩、裁剪、拼接、水印、格式转换及 AI 抠图等一站式图像处理能力。',
-    tools: [
-      {
-        id: 'img-convert',
-        name: '图像压缩与转换',
-        description: '支持 JPG/PNG 格式互转，可调节质量与颜色深度以压缩体积',
-        icon: FileImage,
-        component: <ImageConverter />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'img-resize',
-        name: '图像尺寸调整',
-        description: '修改图片分辨率，支持像素/百分比缩放及等比锁定',
-        icon: Scaling,
-        component: <ImageResizer />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'img-crop',
-        name: '图像裁剪',
-        description: '可视化自由裁剪，支持精确坐标定位与快捷对齐',
-        icon: Crop,
-        component: <ImageCropper />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'img-slice',
-        name: '图像切片',
-        description: '将图片按行列网格切分为多张小图，并打包为 ZIP 下载',
-        icon: Grid,
-        component: <ImageGridSlicer />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'bg-remove',
-        name: '智能抠图',
-        description: '基于 AI 自动识别并移除图片背景，支持人像、商品与物体',
-        icon: ImageMinus,
-        component: <BackgroundRemover />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'img-comp',
-        name: '画布拼贴',
-        description: '无限画布、多图层拖拽合成，支持自由旋转、缩放与层级调整',
-        icon: Layers,
-        component: <ImageComposition />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'watermark',
-        name: '图片水印',
-        description: '全本地处理，支持自定义文字、颜色、角度的平铺水印制作',
-        icon: Stamp,
-        component: <WatermarkGenerator />,
-        layoutClass: 'max-w-5xl mx-auto'
-      },
-      {
-        id: 'md-to-img',
-        name: 'Markdown 转图片',
-        description: 'Markdown 文本实时渲染，一键转换为长图下载',
-        icon: FileType,
-        component: <MarkdownToImage />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'qr-gen',
-        name: '二维码生成',
-        description: '实时生成二维码，支持自定义前景色、背景色与尺寸',
-        icon: QrCode,
-        component: <QrCodeGenerator />,
-        layoutClass: 'max-w-5xl mx-auto'
-      }
-    ]
-  },
-  {
-    id: CategoryId.MEDIA,
-    name: '影音媒体',
-    icon: FileVideo,
-    description: '支持音视频格式转码、压缩、提取音频及剪辑等功能的影音工具箱。',
-    tools: [
-      {
-        id: 'audio-convert',
-        name: '音频压缩与转换',
-        description: '支持音频/视频导入，可视化波形剪辑、音量调节、采样率转换与导出',
-        icon: Music,
-        component: <AudioConverter />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'video-cmd',
-        name: '视频压缩与转换',
-        description: '本地解析视频参数，可视化生成 FFmpeg 转码与压缩命令',
-        icon: Film,
-        component: <VideoCommandGenerator />,
-        layoutClass: 'w-full'
-      }
-    ]
-  },
-  {
-    id: CategoryId.TEXT_DATA,
-    name: '文本与数据',
-    icon: FileText,
-    description: '包含时间转换、哈希计算、UUID 生成、密码生成等通用数据处理工具。',
-    tools: [
-      {
-        id: 'timestamp',
-        name: '时间与日期',
-        description: '实时时间戳、日期互转、公农历转换及时间差计算',
-        icon: Clock,
-        component: <TimestampConverter />,
-        layoutClass: 'max-w-5xl mx-auto'
-      },
-      {
-        id: 'password-gen',
-        name: '随机密码生成',
-        description: '可自定义字符类型与长度的高强度密码生成器',
-        icon: KeyRound,
-        component: <PasswordGenerator />,
-        layoutClass: 'max-w-3xl mx-auto'
-      },
-      {
-        id: 'uuid-gen',
-        name: 'UUID 生成',
-        description: '支持 V4 (随机) 与 V5 (基于命名空间) 的 UUID 生成',
-        icon: Fingerprint,
-        component: <UuidGenerator />,
-        layoutClass: 'max-w-3xl mx-auto'
-      },
-      {
-        id: 'md5-hash',
-        name: 'MD5 计算器',
-        description: '支持文本摘要计算与本地文件 MD5 哈希值计算',
-        icon: Hash,
-        component: <Md5Generator />,
-        layoutClass: 'max-w-3xl mx-auto'
-      }
-    ]
-  },
-  {
-    id: CategoryId.DEVELOPER,
-    name: '开发者',
-    icon: Code2,
-    description: '提供代码运行、JSON 格式化、缓动函数可视化等编程辅助工具。',
-    tools: [
-      {
-        id: 'json-format',
-        name: 'JSON 格式化',
-        description: 'JSON 数据的验证、美化、压缩、纠错与树状预览',
-        icon: Braces,
-        component: <JsonFormatter />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'code-runner',
-        name: '在线运行代码',
-        description: '支持 50+ 种语言的在线编译与运行，提供即时反馈',
-        icon: Terminal,
-        component: <CodeRunner />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'easing-vis',
-        name: '缓动函数',
-        description: '交互式展示 CSS/JS 常用缓动函数曲线与动画效果',
-        icon: Activity,
-        component: <EasingVisualizer />,
-        layoutClass: 'max-w-7xl mx-auto'
-      }
-    ]
-  },
-  {
-    id: CategoryId.NETWORK,
-    name: '网络',
-    icon: Network,
-    description: '提供全球网络连通性检测、宽带测速及网络协议调试工具。',
-    tools: [
-      {
-        id: 'check-host',
-        name: '全球网络检测',
-        description: '利用 Globalping 分布式网络检测全球各地的 Ping/HTTP/DNS/路由 连通性',
-        icon: Globe,
-        component: <CheckHost />,
-        layoutClass: 'w-full'
-      },
-      {
-        id: 'speed-test',
-        name: '宽带测速',
-        description: '精准检测网络下行与上行速度，支持延迟与抖动分析，实时图形化展示',
-        icon: Gauge,
-        component: <SpeedTest />,
-        layoutClass: 'w-full'
-      }
-    ]
-  }
-];
+const LanguageSwitcher: React.FC = () => {
+  const { language, setLanguage } = useLanguage();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-const App: React.FC = () => {
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors p-2 rounded-full hover:bg-gray-100"
+        aria-label="Change Language"
+      >
+        <Languages size={20} />
+        <span className="text-xs font-medium uppercase w-5 text-center">{language === 'zh' ? '中' : 'EN'}</span>
+        <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-2 w-32 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50 animate-fade-in">
+          <button
+            onClick={() => { setLanguage('en'); setIsOpen(false); }}
+            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${language === 'en' ? 'text-primary-600 font-medium' : 'text-gray-700'}`}
+          >
+            English
+          </button>
+          <button
+            onClick={() => { setLanguage('zh'); setIsOpen(false); }}
+            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${language === 'zh' ? 'text-primary-600 font-medium' : 'text-gray-700'}`}
+          >
+            简体中文
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AppContent: React.FC = () => {
   const [isHome, setIsHome] = useState(true);
   const [activeCategoryId, setActiveCategoryId] = useState<string>(CategoryId.IMAGE);
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  const { t } = useLanguage();
+  // Get categories with dynamic translations
+  const categories = useTools();
 
   const activeCategory = categories.find(c => c.id === activeCategoryId);
   const activeTool = activeCategory?.tools.find(t => t.id === activeToolId);
@@ -342,14 +148,14 @@ const App: React.FC = () => {
         <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 justify-between flex-shrink-0">
           <div className="flex items-center gap-2 text-gray-500 text-sm">
             {isHome ? (
-                <span className="font-medium text-gray-900">首页</span>
+                <span className="font-medium text-gray-900">{t('header.home')}</span>
             ) : (
                 <>
                     <button 
                     onClick={() => setActiveToolId(null)}
                     className="hover:text-primary-600 transition-colors flex items-center gap-1"
                     >
-                    {categories.find(c => c.id === activeCategoryId)?.name}
+                    {activeCategory?.name}
                     </button>
                     {activeTool && (
                     <>
@@ -361,15 +167,25 @@ const App: React.FC = () => {
             )}
           </div>
 
-          <a 
-            href="https://github.com/lolo1208/shoebox" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-gray-900 transition-colors p-2 rounded-full hover:bg-gray-100"
-            aria-label="View on GitHub"
-          >
-            <Github size={20} />
-          </a>
+          <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
+            <div className="h-4 w-px bg-gray-200 mx-1"></div>
+
+            <a 
+              href="https://github.com/lolo1208/shoebox" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-gray-900 transition-colors p-2 rounded-full hover:bg-gray-100 flex items-center gap-2 group"
+              aria-label="View on GitHub"
+            >
+              <Github size={20} />
+              <span className="text-xs font-medium hidden sm:block max-w-0 overflow-hidden group-hover:max-w-[100px] transition-all duration-300 ease-in-out whitespace-nowrap">
+                GitHub
+              </span>
+            </a>
+          </div>
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-8">
@@ -413,7 +229,8 @@ const App: React.FC = () => {
                                 <div className="flex justify-center mb-2">
                                     <Code2 size={48} className="opacity-20"/>
                                 </div>
-                                <p>该分类下暂无工具</p>
+                                <p>{t('home.empty.title')}</p>
+                                <p className="text-xs mt-1 opacity-60">{t('home.empty.desc')}</p>
                             </div>
                             )}
                         </div>
@@ -441,6 +258,15 @@ const App: React.FC = () => {
         </main>
       </div>
     </div>
+  );
+};
+
+// Wrap the App with LanguageProvider
+const App: React.FC = () => {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 };
 

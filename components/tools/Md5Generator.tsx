@@ -1,26 +1,25 @@
+
 /// <reference lib="dom" />
-import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Hash, Check, FileSearch, FileText, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Copy, Check, FileSearch, FileText, X, Loader2 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import CryptoJS from 'crypto-js';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Md5Generator: React.FC = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useLocalStorage<'text' | 'file'>('tool-md5-tab', 'text');
   
-  // Text State
   const [textInput, setTextInput] = useLocalStorage<string>('tool-md5-text', '');
   
-  // File State
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
   
-  // Result State
   const [hash, setHash] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Text Calculation
   useEffect(() => {
     if (activeTab === 'text') {
       if (textInput) {
@@ -36,17 +35,15 @@ const Md5Generator: React.FC = () => {
     }
   }, [textInput, activeTab]);
 
-  // File Calculation Logic
   const calculateFileMd5 = async (selectedFile: File) => {
     setIsCalculating(true);
     setProgress(0);
     setHash('');
 
-    const chunkSize = 2 * 1024 * 1024; // 2MB chunks
+    const chunkSize = 2 * 1024 * 1024;
     const chunks = Math.ceil(selectedFile.size / chunkSize);
     let currentChunk = 0;
     
-    // Create incremental MD5 hasher
     const algo = CryptoJS.algo.MD5.create();
     const fileReader = new FileReader();
 
@@ -74,7 +71,6 @@ const Md5Generator: React.FC = () => {
       setProgress(currentProgress);
 
       if (currentChunk < chunks) {
-        // Use setTimeout to allow UI updates (prevent freezing)
         setTimeout(readNextChunk, 0);
       } else {
         const finalHash = algo.finalize().toString();
@@ -130,7 +126,6 @@ const Md5Generator: React.FC = () => {
 
   return (
     <div className="w-full space-y-6">
-      {/* Tab Switcher */}
       <div className="flex p-1 bg-gray-100 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab('text')}
@@ -140,7 +135,7 @@ const Md5Generator: React.FC = () => {
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          文本 MD5
+          {t('md5.text')}
         </button>
         <button
           onClick={() => setActiveTab('file')}
@@ -150,23 +145,22 @@ const Md5Generator: React.FC = () => {
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          文件 MD5
+          {t('md5.file')}
         </button>
       </div>
 
       {activeTab === 'text' ? (
         <div className="space-y-2 animate-fade-in">
-          <label className="block text-sm font-medium text-gray-700">输入文本</label>
+          <label className="block text-sm font-medium text-gray-700">{t('md5.input')}</label>
           <textarea
             value={textInput}
             onChange={(e) => setTextInput((e.target as HTMLTextAreaElement).value)}
-            placeholder="输入文本以计算 MD5..."
+            placeholder={t('md5.input_ph')}
             className="w-full h-32 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-100 focus:border-primary-500 transition-all resize-none text-gray-800"
           />
         </div>
       ) : (
         <div className="space-y-4 animate-fade-in">
-          {/* Always render input to prevent file access errors */}
           <input 
             id="md5-file-upload" 
             type="file" 
@@ -188,8 +182,8 @@ const Md5Generator: React.FC = () => {
               <div className="w-16 h-16 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-4 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                   <FileSearch size={32} />
               </div>
-              <p className="text-xl font-bold text-gray-800 mb-2">选择文件</p>
-              <p className="text-sm text-gray-500">支持任意文件格式，本地计算不上传</p>
+              <p className="text-xl font-bold text-gray-800 mb-2">{t('md5.file_ph')}</p>
+              <p className="text-sm text-gray-500">{t('md5.file_desc')}</p>
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -214,7 +208,7 @@ const Md5Generator: React.FC = () => {
               {isCalculating ? (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm text-gray-600">
-                    <span>Calculating...</span>
+                    <span>{t('md5.calculating')}</span>
                     <span>{progress.toFixed(0)}%</span>
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -227,7 +221,7 @@ const Md5Generator: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-3 py-1.5 rounded-lg w-fit">
                   <Check size={16} />
-                  计算完成
+                  {t('md5.done')}
                 </div>
               )}
             </div>
@@ -236,7 +230,7 @@ const Md5Generator: React.FC = () => {
       )}
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">MD5 结果 (32位小写)</label>
+        <label className="block text-sm font-medium text-gray-700">{t('md5.result')}</label>
         <div className="relative">
           <div className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-800 break-all min-h-[56px] flex items-center">
             {hash ? (
@@ -244,7 +238,7 @@ const Md5Generator: React.FC = () => {
             ) : (
                <div className="flex items-center text-gray-400 italic gap-2">
                  {isCalculating ? <Loader2 className="animate-spin" size={16}/> : null}
-                 {isCalculating ? '计算中...' : '等待输入...'}
+                 {isCalculating ? t('md5.calculating') : t('common.waiting')}
                </div>
             )}
           </div>

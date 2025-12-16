@@ -1,10 +1,12 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FileAudio, Download, Play, Pause, Volume2, Music, RefreshCw, FileVideo, ChevronRight, ChevronLeft, Settings2, Info, Check, Timer, Clock } from 'lucide-react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const AudioConverter: React.FC = () => {
+  const { t } = useLanguage();
   // --- Core State ---
   const [file, setFile] = useState<File | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -94,7 +96,7 @@ const AudioConverter: React.FC = () => {
 
   const loadFfmpegCore = async () => {
       if (!ffmpeg || ffmpegLoaded) return true;
-      setStatusMessage('正在加载引擎 (30MB)...');
+      setStatusMessage(t('audio.loading_engine'));
       setIsProcessing(true);
       try {
           const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
@@ -106,7 +108,7 @@ const AudioConverter: React.FC = () => {
           return true;
       } catch (e) {
           console.error(e);
-          alert('组件加载失败。请检查网络或使用 Chrome 浏览器。');
+          alert(t('audio.load_fail'));
           return false;
       } finally {
           setIsProcessing(false);
@@ -153,7 +155,7 @@ const AudioConverter: React.FC = () => {
   const loadFile = async (f: File) => {
     setFile(f);
     stopPlayback();
-    setStatusMessage('正在解析音频...');
+    setStatusMessage(t('audio.parsing'));
     setIsProcessing(true);
 
     try {
@@ -175,7 +177,7 @@ const AudioConverter: React.FC = () => {
       const loaded = await loadFfmpegCore();
       if (!loaded) return;
 
-      setStatusMessage('正在转码音频流...');
+      setStatusMessage(t('audio.transcoding'));
       const inputName = 'input_raw';
       const outputName = 'decoded.wav';
       
@@ -195,7 +197,7 @@ const AudioConverter: React.FC = () => {
           await ffmpeg!.deleteFile(outputName);
       } catch (err) {
           console.error(err);
-          alert("该文件格式无法解析");
+          alert(t('audio.parse_fail'));
           setFile(null);
       }
   };
@@ -558,7 +560,7 @@ const AudioConverter: React.FC = () => {
       if (!loaded) return;
 
       setIsProcessing(true);
-      setStatusMessage('正在处理音频...');
+      setStatusMessage(t('audio.processing_audio'));
       setProgress(0);
 
       try {
@@ -594,7 +596,7 @@ const AudioConverter: React.FC = () => {
           }
 
           args.push(outputName);
-          setStatusMessage('正在编码...');
+          setStatusMessage(t('audio.encoding'));
           await ffmpeg!.exec(args);
 
           const data = await ffmpeg!.readFile(outputName);
@@ -614,7 +616,7 @@ const AudioConverter: React.FC = () => {
 
       } catch (e) {
           console.error(e);
-          alert('导出失败: ' + (e as Error).message);
+          alert(t('audio.export_fail') + (e as Error).message);
       } finally {
           setIsProcessing(false);
           setStatusMessage('');
@@ -650,12 +652,12 @@ const AudioConverter: React.FC = () => {
       }
   };
 
-  const formats = [
-      { id: 'mp3', label: 'MP3', desc: '最通用，兼容性好', icon: 'MP3' },
-      { id: 'm4a', label: 'M4A', desc: '同体积下音质更好', icon: 'AAC' },
-      { id: 'wav', label: 'WAV', desc: '无损，适合编辑', icon: 'WAV' },
-      { id: 'ogg', label: 'OGG', desc: '开源，适合游戏', icon: 'OGG' },
-  ];
+  const formats = useMemo(() => [
+      { id: 'mp3', label: 'MP3', desc: t('audio.fmt_mp3_desc'), icon: 'MP3' },
+      { id: 'm4a', label: 'M4A', desc: t('audio.fmt_m4a_desc'), icon: 'AAC' },
+      { id: 'wav', label: 'WAV', desc: t('audio.fmt_wav_desc'), icon: 'WAV' },
+      { id: 'ogg', label: 'OGG', desc: t('audio.fmt_ogg_desc'), icon: 'OGG' },
+  ], [t]);
 
   return (
     <div className="flex flex-col h-full gap-6">
@@ -675,8 +677,8 @@ const AudioConverter: React.FC = () => {
               <div className="w-20 h-20 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-6 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                   <FileAudio size={40} />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">选择媒体文件</h3>
-              <p className="text-gray-500">拖拽音频或视频至此，开始剪辑与转换</p>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{t('audio.upload_title')}</h3>
+              <p className="text-gray-500">{t('audio.upload_desc')}</p>
           </div>
       )}
 
@@ -699,7 +701,7 @@ const AudioConverter: React.FC = () => {
                           </div>
                       </div>
                       <button onClick={handleClose} className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 rounded-lg text-gray-500 transition-all text-sm font-medium shadow-sm">
-                          取消 / 关闭
+                          {t('audio.cancel_close')}
                       </button>
                   </div>
 
@@ -793,7 +795,7 @@ const AudioConverter: React.FC = () => {
                           </button>
                           
                           <div className="flex flex-col">
-                              <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">播放位置</div>
+                              <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">{t('audio.pos')}</div>
                               <div className="font-mono text-xl font-medium text-gray-700 w-[100px]">
                                   {formatTime(currentTime)}
                               </div>
@@ -802,7 +804,7 @@ const AudioConverter: React.FC = () => {
 
                       {/* 2. Middle: Clip Duration (Centered) */}
                       <div className="flex flex-col items-center flex-1">
-                          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">剪辑时长</div>
+                          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">{t('audio.duration')}</div>
                           <div className="font-mono text-4xl font-bold text-primary-600 tracking-tight leading-none flex items-baseline gap-1">
                               {formatTime(trimEnd - trimStart)}
                               <span className="text-base font-medium text-gray-400">s</span>
@@ -814,7 +816,7 @@ const AudioConverter: React.FC = () => {
                           {/* Volume */}
                           <div className="flex flex-col gap-1 w-[100px]">
                               <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                  <div className="flex items-center gap-1"><Volume2 size={10}/> 音量</div>
+                                  <div className="flex items-center gap-1"><Volume2 size={10}/> {t('audio.volume')}</div>
                                   <span>{volume}%</span>
                               </div>
                               <input 
@@ -828,12 +830,12 @@ const AudioConverter: React.FC = () => {
                           <div className="flex items-center gap-3 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
                               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 cursor-pointer select-none">
                                   <input type="checkbox" checked={fadeIn} onChange={e => setFadeIn(e.target.checked)} className="w-3.5 h-3.5 rounded text-primary-600 focus:ring-primary-500 border-gray-300" />
-                                  淡入
+                                  {t('audio.fade_in')}
                               </label>
                               <div className="w-px h-3 bg-gray-300"></div>
                               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 cursor-pointer select-none">
                                   <input type="checkbox" checked={fadeOut} onChange={e => setFadeOut(e.target.checked)} className="w-3.5 h-3.5 rounded text-primary-600 focus:ring-primary-500 border-gray-300" />
-                                  淡出
+                                  {t('audio.fade_out')}
                               </label>
                               
                               <div className={`transition-all duration-200 overflow-hidden flex items-center gap-1 border-l border-gray-300 pl-3 ${fadeIn || fadeOut ? 'w-auto opacity-100' : 'w-0 opacity-0'}`}>
@@ -854,7 +856,7 @@ const AudioConverter: React.FC = () => {
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                       <Settings2 size={20} className="text-primary-600" />
-                      导出格式与配置
+                      {t('audio.export_config')}
                   </h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -889,15 +891,15 @@ const AudioConverter: React.FC = () => {
                       <div className="flex items-center gap-6">
                           {(targetFormat === 'mp3' || targetFormat === 'm4a') && (
                               <div className="flex items-center gap-3">
-                                  <label className="text-sm font-medium text-gray-700">音频质量 (码率)</label>
+                                  <label className="text-sm font-medium text-gray-700">{t('audio.quality')}</label>
                                   <select 
                                     value={bitrate} 
                                     onChange={(e) => setBitrate(e.target.value)}
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 min-w-[120px]"
                                   >
-                                      <option value="128">128 kbps (标准)</option>
-                                      <option value="192">192 kbps (高质)</option>
-                                      <option value="320">320 kbps (超高)</option>
+                                      <option value="128">128 kbps ({t('audio.br_std')})</option>
+                                      <option value="192">192 kbps ({t('audio.br_high')})</option>
+                                      <option value="320">320 kbps ({t('audio.br_ultra')})</option>
                                   </select>
                               </div>
                           )}
@@ -905,12 +907,12 @@ const AudioConverter: React.FC = () => {
                           {targetFormat === 'wav' && (
                               <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
                                   <Info size={16} />
-                                  WAV 为无损格式，无需设置码率
+                                  {t('audio.wav_tip')}
                               </div>
                           )}
                           
                           <div className="text-sm text-gray-500 font-mono bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg">
-                              预估大小: <strong>{calculateEstimatedSize()}</strong>
+                              {t('audio.est_size')}: <strong>{calculateEstimatedSize()}</strong>
                           </div>
                       </div>
 
@@ -921,7 +923,7 @@ const AudioConverter: React.FC = () => {
                         className="w-full md:w-auto px-8 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 shadow-lg shadow-primary-200 font-bold text-lg flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                           {isProcessing ? <RefreshCw className="animate-spin" /> : <Download />}
-                          导出音频
+                          {t('audio.export')}
                       </button>
                   </div>
               </div>

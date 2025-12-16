@@ -1,7 +1,9 @@
+
 /// <reference lib="dom" />
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Upload, Download, RefreshCw, X, Plus, RotateCw, Trash2, ArrowUp, ArrowDown, LayoutTemplate, ChevronDown, ChevronRight, Smartphone, Monitor, FileText, Instagram, Hash, Layers, ArrowRightLeft } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface CanvasElement {
   id: string;
@@ -15,87 +17,89 @@ interface CanvasElement {
   zIndex: number;
 }
 
-// Structured Presets
-const PRESET_CATEGORIES = [
-  {
-    id: 'common',
-    label: '常用标准',
-    icon: Hash,
-    items: [
-      { name: '1080P (FHD)', w: 1920, h: 1080 },
-      { name: '2K QHD', w: 2560, h: 1440 },
-      { name: '4K UHD', w: 3840, h: 2160 },
-      { name: 'A4 纸张 (300dpi)', w: 2480, h: 3508 },
-      { name: '4:3 标准', w: 800, h: 600 },
-      { name: '1:1 方图', w: 1080, h: 1080 },
-    ]
-  },
-  {
-    id: 'social',
-    label: '社交媒体',
-    icon: Instagram,
-    items: [
-      { name: '公众号封面(首)', w: 900, h: 383 },
-      { name: '公众号封面(次)', w: 200, h: 200 },
-      { name: '小红书 (3:4)', w: 1242, h: 1660 },
-      { name: 'Instagram Story', w: 1080, h: 1920 },
-      { name: 'B站/Youtube 封面', w: 1280, h: 720 },
-      { name: '朋友圈海报', w: 1080, h: 1920 },
-    ]
-  },
-  {
-    id: 'mobile',
-    label: '手机设备',
-    icon: Smartphone,
-    items: [
-      { name: 'iPhone 15 Pro Max', w: 1290, h: 2796 },
-      { name: 'iPhone 15/14 Pro', w: 1179, h: 2556 },
-      { name: 'Samsung S24 Ultra', w: 1440, h: 3120 },
-      { name: 'Google Pixel 8 Pro', w: 1344, h: 2992 },
-      { name: 'Huawei Mate 60 Pro', w: 1260, h: 2720 },
-      { name: 'iPhone SE', w: 750, h: 1334 },
-      { name: 'Android 通用', w: 1080, h: 2400 },
-    ]
-  },
-  {
-    id: 'tablet',
-    label: '平板设备',
-    icon: Layers,
-    items: [
-      { name: 'iPad Pro 12.9"', w: 2048, h: 2732 },
-      { name: 'iPad Air/Pro 11"', w: 1668, h: 2388 },
-      { name: 'Samsung Tab S9 Ultra', w: 1848, h: 2960 },
-      { name: 'Surface Pro 9', w: 2880, h: 1920 },
-      { name: 'iPad mini', w: 1488, h: 2266 },
-    ]
-  },
-  {
-    id: 'desktop',
-    label: '电脑屏幕',
-    icon: Monitor,
-    items: [
-      { name: '4K UHD', w: 3840, h: 2160 },
-      { name: '2K QHD', w: 2560, h: 1440 },
-      { name: 'Full HD', w: 1920, h: 1080 },
-      { name: 'MacBook Pro 16"', w: 3456, h: 2234 },
-      { name: 'MacBook Air', w: 2560, h: 1664 },
-    ]
-  },
-  {
-    id: 'paper',
-    label: '纸张/打印 (300dpi)',
-    icon: FileText,
-    items: [
-      { name: 'A4', w: 2480, h: 3508 },
-      { name: 'A3', w: 3508, h: 4961 },
-      { name: 'A5', w: 1748, h: 2480 },
-      { name: '名片 (90x54mm)', w: 1063, h: 638 },
-      { name: 'A4 (屏幕用 72dpi)', w: 595, h: 842 },
-    ]
-  }
-];
-
 const ImageComposition: React.FC = () => {
+  const { t } = useLanguage();
+  
+  // Structured Presets (Memoized for translation)
+  const presetCategories = useMemo(() => [
+    {
+      id: 'common',
+      label: t('comp.preset.common'),
+      icon: Hash,
+      items: [
+        { name: '1080P (FHD)', w: 1920, h: 1080 },
+        { name: '2K QHD', w: 2560, h: 1440 },
+        { name: '4K UHD', w: 3840, h: 2160 },
+        { name: t('comp.item.a4'), w: 2480, h: 3508 },
+        { name: t('comp.item.standard'), w: 800, h: 600 },
+        { name: t('comp.item.square'), w: 1080, h: 1080 },
+      ]
+    },
+    {
+      id: 'social',
+      label: t('comp.preset.social'),
+      icon: Instagram,
+      items: [
+        { name: t('comp.item.wechat_cover_1'), w: 900, h: 383 },
+        { name: t('comp.item.wechat_cover_2'), w: 200, h: 200 },
+        { name: t('comp.item.rednote'), w: 1242, h: 1660 },
+        { name: t('comp.item.insta_story'), w: 1080, h: 1920 },
+        { name: t('comp.item.video_cover'), w: 1280, h: 720 },
+        { name: t('comp.item.moments'), w: 1080, h: 1920 },
+      ]
+    },
+    {
+      id: 'mobile',
+      label: t('comp.preset.mobile'),
+      icon: Smartphone,
+      items: [
+        { name: 'iPhone 15 Pro Max', w: 1290, h: 2796 },
+        { name: 'iPhone 15/14 Pro', w: 1179, h: 2556 },
+        { name: 'Samsung S24 Ultra', w: 1440, h: 3120 },
+        { name: 'Google Pixel 8 Pro', w: 1344, h: 2992 },
+        { name: 'Huawei Mate 60 Pro', w: 1260, h: 2720 },
+        { name: 'iPhone SE', w: 750, h: 1334 },
+        { name: t('comp.item.android'), w: 1080, h: 2400 },
+      ]
+    },
+    {
+      id: 'tablet',
+      label: t('comp.preset.tablet'),
+      icon: Layers,
+      items: [
+        { name: 'iPad Pro 12.9"', w: 2048, h: 2732 },
+        { name: 'iPad Air/Pro 11"', w: 1668, h: 2388 },
+        { name: 'Samsung Tab S9 Ultra', w: 1848, h: 2960 },
+        { name: 'Surface Pro 9', w: 2880, h: 1920 },
+        { name: 'iPad mini', w: 1488, h: 2266 },
+      ]
+    },
+    {
+      id: 'desktop',
+      label: t('comp.preset.desktop'),
+      icon: Monitor,
+      items: [
+        { name: '4K UHD', w: 3840, h: 2160 },
+        { name: '2K QHD', w: 2560, h: 1440 },
+        { name: 'Full HD', w: 1920, h: 1080 },
+        { name: 'MacBook Pro 16"', w: 3456, h: 2234 },
+        { name: 'MacBook Air', w: 2560, h: 1664 },
+      ]
+    },
+    {
+      id: 'paper',
+      label: t('comp.preset.paper'),
+      icon: FileText,
+      items: [
+        { name: t('comp.item.a4'), w: 2480, h: 3508 },
+        { name: t('comp.item.a3'), w: 3508, h: 4961 },
+        { name: t('comp.item.a5'), w: 1748, h: 2480 },
+        { name: t('comp.item.business_card'), w: 1063, h: 638 },
+        { name: 'A4 (Screen 72dpi)', w: 595, h: 842 },
+      ]
+    }
+  ], [t]);
+
   // Canvas Settings
   const [canvasW, setCanvasW] = useLocalStorage<number>('tool-comp-w', 800);
   const [canvasH, setCanvasH] = useLocalStorage<number>('tool-comp-h', 600);
@@ -368,7 +372,7 @@ const ImageComposition: React.FC = () => {
     const ctx = canvas.getContext('2d');
     
     if (!ctx) {
-      alert('Canvas init failed');
+      alert(t('common.error'));
       setIsProcessing(false);
       return;
     }
@@ -430,7 +434,7 @@ const ImageComposition: React.FC = () => {
 
     } catch (e) {
         console.error(e);
-        alert('Failed to process images');
+        alert(t('common.error'));
         setIsProcessing(false);
     }
   };
@@ -445,12 +449,12 @@ const ImageComposition: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
              <h3 className="font-bold text-gray-900 flex items-center gap-2">
                  <RefreshCw size={18} className="text-primary-600"/>
-                 画布设置
+                 {t('comp.settings')}
              </h3>
              
              <div className="flex items-end gap-2">
                  <div className="flex-1">
-                    <label className="text-xs text-gray-500 block mb-1">宽度 (W)</label>
+                    <label className="text-xs text-gray-500 block mb-1">{t('comp.width')} (W)</label>
                     <input 
                         type="number" 
                         value={canvasW || ''} 
@@ -464,12 +468,12 @@ const ImageComposition: React.FC = () => {
                  <button 
                     onClick={swapDimensions}
                     className="mb-1 p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                    title="交换宽高"
+                    title={t('comp.swap')}
                  >
                      <ArrowRightLeft size={16} />
                  </button>
                  <div className="flex-1">
-                    <label className="text-xs text-gray-500 block mb-1">高度 (H)</label>
+                    <label className="text-xs text-gray-500 block mb-1">{t('comp.height')} (H)</label>
                     <input 
                         type="number" 
                         value={canvasH || ''} 
@@ -490,7 +494,7 @@ const ImageComposition: React.FC = () => {
                  >
                      <div className="flex items-center gap-2">
                         <LayoutTemplate size={16} className="text-primary-600" />
-                        <span>选择预设尺寸...</span>
+                        <span>{t('comp.presets')}</span>
                      </div>
                      {showPresetMenu ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                  </button>
@@ -498,7 +502,7 @@ const ImageComposition: React.FC = () => {
                  {/* Presets Popover */}
                  {showPresetMenu && (
                      <div className="absolute left-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-[100] max-h-[400px] overflow-auto flex flex-col p-1 animate-fade-in">
-                         {PRESET_CATEGORIES.map(category => (
+                         {presetCategories.map(category => (
                              <div key={category.id} className="border-b border-gray-100 last:border-0">
                                  <button
                                     onClick={() => setExpandedCategory(expandedCategory === category.id ? '' : category.id)}
@@ -538,7 +542,7 @@ const ImageComposition: React.FC = () => {
              </div>
 
              <div>
-                <label className="text-xs text-gray-500 block mb-1">背景颜色 (支持透明)</label>
+                <label className="text-xs text-gray-500 block mb-1">{t('comp.bg_color')}</label>
                 <div className="flex gap-2">
                     <input 
                         type="color" 
@@ -551,13 +555,13 @@ const ImageComposition: React.FC = () => {
                             onClick={() => setBgColor('#ffffff00')} 
                             className={`flex-1 text-xs border rounded ${bgColor.endsWith('00') ? 'bg-primary-50 border-primary-300 text-primary-700' : 'border-gray-300 text-gray-500'}`}
                         >
-                            透明
+                            {t('comp.transparent')}
                         </button>
                         <button 
                             onClick={() => setBgColor('#ffffff')} 
                             className={`flex-1 text-xs border rounded ${bgColor === '#ffffff' ? 'bg-primary-50 border-primary-300 text-primary-700' : 'border-gray-300 text-gray-500'}`}
                         >
-                            纯白
+                            {t('comp.white')}
                         </button>
                     </div>
                 </div>
@@ -567,7 +571,7 @@ const ImageComposition: React.FC = () => {
         {/* Layer List */}
         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 flex flex-col min-h-0">
              <div className="flex justify-between items-center mb-4">
-                 <h3 className="font-bold text-gray-900">图层 ({elements.length})</h3>
+                 <h3 className="font-bold text-gray-900">{t('comp.layers')} ({elements.length})</h3>
                  <button 
                     onClick={() => document.getElementById('comp-upload')?.click()}
                     className="p-1.5 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
@@ -592,13 +596,13 @@ const ImageComposition: React.FC = () => {
                          
                          {selectedId === el.id && (
                              <div className="flex gap-1">
-                                 <button onClick={e => { e.stopPropagation(); changeZIndex(el.id, 1); }} title="上移" className="p-1 hover:bg-white rounded text-gray-500 hover:text-primary-600">
+                                 <button onClick={e => { e.stopPropagation(); changeZIndex(el.id, 1); }} title={t('comp.move_up')} className="p-1 hover:bg-white rounded text-gray-500 hover:text-primary-600">
                                      <ArrowUp size={14} />
                                  </button>
-                                 <button onClick={e => { e.stopPropagation(); changeZIndex(el.id, -1); }} title="下移" className="p-1 hover:bg-white rounded text-gray-500 hover:text-primary-600">
+                                 <button onClick={e => { e.stopPropagation(); changeZIndex(el.id, -1); }} title={t('comp.move_down')} className="p-1 hover:bg-white rounded text-gray-500 hover:text-primary-600">
                                      <ArrowDown size={14} />
                                  </button>
-                                 <button onClick={e => { e.stopPropagation(); deleteElement(el.id); }} title="删除" className="p-1 hover:bg-white rounded text-gray-500 hover:text-red-500">
+                                 <button onClick={e => { e.stopPropagation(); deleteElement(el.id); }} title={t('comp.delete')} className="p-1 hover:bg-white rounded text-gray-500 hover:text-red-500">
                                      <Trash2 size={14} />
                                  </button>
                              </div>
@@ -613,8 +617,8 @@ const ImageComposition: React.FC = () => {
                          <div className="w-12 h-12 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-3 text-gray-400 group-hover:text-primary-600 transition-colors">
                              <Plus size={24} />
                          </div>
-                         <div className="text-sm font-bold text-gray-700">添加图片</div>
-                         <div className="text-xs text-gray-400 mt-1">支持多选导入</div>
+                         <div className="text-sm font-bold text-gray-700">{t('comp.add_img')}</div>
+                         <div className="text-xs text-gray-400 mt-1">{t('comp.upload_tip')}</div>
                      </div>
                  )}
              </div>
@@ -672,7 +676,7 @@ const ImageComposition: React.FC = () => {
                                    <div 
                                        className="absolute left-1/2 -top-8 -translate-x-1/2 w-6 h-6 bg-white border border-primary-500 rounded-full flex items-center justify-center cursor-pointer shadow-sm z-50"
                                        onMouseDown={(e) => onMouseDown(e, el.id, 'rotate')}
-                                       title="旋转"
+                                       title={t('comp.rotate')}
                                    >
                                        <RotateCw size={14} className="text-primary-600" />
                                    </div>
@@ -683,21 +687,21 @@ const ImageComposition: React.FC = () => {
                                    <div 
                                        className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-primary-600 border-2 border-white rounded-full cursor-se-resize z-50 shadow-sm"
                                        onMouseDown={(e) => onMouseDown(e, el.id, 'resize', 'se')}
-                                       title="等比缩放"
+                                       title={t('comp.scale_proportional')}
                                    ></div>
 
                                    {/* Resize Handle (E) - Width Only */}
                                    <div 
                                        className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-6 bg-white border border-gray-400 rounded-full cursor-e-resize z-40 hover:bg-primary-50 shadow-sm"
                                        onMouseDown={(e) => onMouseDown(e, el.id, 'resize', 'e')}
-                                       title="调整宽度"
+                                       title={t('comp.resize_width')}
                                    ></div>
 
                                    {/* Resize Handle (S) - Height Only */}
                                    <div 
                                        className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-3 bg-white border border-gray-400 rounded-full cursor-s-resize z-40 hover:bg-primary-50 shadow-sm"
                                        onMouseDown={(e) => onMouseDown(e, el.id, 'resize', 's')}
-                                       title="调整高度"
+                                       title={t('comp.resize_height')}
                                    ></div>
                                </>
                            )}
@@ -709,7 +713,7 @@ const ImageComposition: React.FC = () => {
            {/* Toolbar */}
            <div className="bg-white border-t border-gray-200 p-4 flex justify-between items-center z-10">
                 <div className="flex gap-4 items-center">
-                    <span className="text-sm text-gray-500">导出格式:</span>
+                    <span className="text-sm text-gray-500">{t('comp.export_format')}:</span>
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                          <button onClick={() => setExportFormat('jpeg')} className={`px-3 py-1 text-xs rounded ${exportFormat === 'jpeg' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>JPG</button>
                          <button onClick={() => setExportFormat('png')} className={`px-3 py-1 text-xs rounded ${exportFormat === 'png' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>PNG</button>
@@ -722,7 +726,7 @@ const ImageComposition: React.FC = () => {
                     className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                 >
                     {isProcessing ? <RefreshCw className="animate-spin" size={18} /> : <Download size={18} />}
-                    导出合成图片
+                    {t('comp.export_btn')}
                 </button>
            </div>
       </div>

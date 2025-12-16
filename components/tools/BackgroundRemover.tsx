@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { ImageMinus, Download, RefreshCw, X, Layers, Wand2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { removeBackground, Config } from '@imgly/background-removal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const BackgroundRemover: React.FC = () => {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
@@ -62,15 +64,10 @@ const BackgroundRemover: React.FC = () => {
     
     setIsProcessing(true);
     setError(null);
-    setProgressText('正在初始化...');
+    setProgressText(t('bg.init'));
 
     try {
         // Robust calculation of publicPath relative to current deployment root.
-        // It handles cases like:
-        // - http://localhost/
-        // - http://localhost/shoebox/
-        // - http://localhost/shoebox/index.html
-        
         let root = window.location.pathname;
         // Remove 'index.html' if present
         root = root.replace(/\/[^/]*\.html$/, '');
@@ -85,9 +82,9 @@ const BackgroundRemover: React.FC = () => {
             progress: (key: string, current: number, total: number) => {
                  if (key === 'compute:inference') {
                      const p = Math.round((current / total) * 100);
-                     setProgressText(`AI 计算中: ${p}%`);
+                     setProgressText(`${t('bg.processing')} ${p}%`);
                  } else if (key.includes('fetch')) {
-                     setProgressText('加载本地模型...');
+                     setProgressText(t('bg.init'));
                  }
             },
             debug: false,
@@ -98,10 +95,10 @@ const BackgroundRemover: React.FC = () => {
         
         const url = URL.createObjectURL(imageBlob);
         setProcessedUrl(url);
-        setProgressText('完成');
+        setProgressText(t('md5.done'));
     } catch (err: any) {
         console.error(err);
-        setError('处理失败。请检查 public/models/imgly-bg-data/dist/ 目录是否存在且包含模型文件 (.wasm, .onnx)。' + (err.message ? ` (${err.message})` : ''));
+        setError(`${t('common.error')}: ${t('bg.error_tip')} (${err.message || ''})`);
     } finally {
         setIsProcessing(false);
     }
@@ -158,8 +155,8 @@ const BackgroundRemover: React.FC = () => {
                 <div className="w-20 h-20 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-6 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                     <ImageMinus size={40} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">选择图片进行抠图</h3>
-                <p className="text-gray-500">AI 自动识别主体，一键透明化处理</p>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">{t('bg.upload_title')}</h3>
+                <p className="text-gray-500">{t('bg.upload_desc')}</p>
             </div>
         ) : (
             <div className="flex flex-col h-full gap-6">
@@ -176,7 +173,7 @@ const BackgroundRemover: React.FC = () => {
                         <button 
                             onClick={() => { setFile(null); setOriginalUrl(null); setProcessedUrl(null); }}
                             className="ml-2 p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
-                            title="移除图片"
+                            title={t('bg.remove_img')}
                         >
                             <X size={20} />
                         </button>
@@ -196,7 +193,7 @@ const BackgroundRemover: React.FC = () => {
                             `}
                         >
                             {isProcessing ? <RefreshCw className="animate-spin" size={18} /> : <Wand2 size={18} />}
-                            {isProcessing ? 'AI 计算中...' : processedUrl ? '已完成' : '开始抠图'}
+                            {isProcessing ? t('bg.processing') : processedUrl ? t('md5.done') : t('bg.start')}
                         </button>
                         
                         {processedUrl && (
@@ -205,7 +202,7 @@ const BackgroundRemover: React.FC = () => {
                                 className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-sm transition-all active:scale-95"
                             >
                                 <Download size={18} />
-                                下载 PNG
+                                {t('bg.download')}
                             </button>
                         )}
                     </div>
@@ -218,10 +215,10 @@ const BackgroundRemover: React.FC = () => {
                      <div className="absolute top-4 left-4 flex gap-2 z-20">
                          {processedUrl ? (
                              <span className={`px-2 py-1 rounded text-xs font-medium backdrop-blur-sm shadow-sm transition-colors duration-200 ${isComparing ? 'bg-black/70 text-white' : 'bg-green-600/90 text-white'}`}>
-                                 {isComparing ? '原图' : '抠图结果'}
+                                 {isComparing ? t('bg.original') : t('bg.result')}
                              </span>
                          ) : (
-                             <span className="px-2 py-1 rounded text-xs font-medium bg-black/50 text-white backdrop-blur-sm">原图预览</span>
+                             <span className="px-2 py-1 rounded text-xs font-medium bg-black/50 text-white backdrop-blur-sm">{t('img_conv.preview')}</span>
                          )}
                      </div>
 
@@ -245,7 +242,7 @@ const BackgroundRemover: React.FC = () => {
                                      <Layers size={48} className="opacity-20" />
                                  )}
                                  <p className="text-sm font-medium text-gray-500">
-                                     {isProcessing ? progressText : '请上传图片'}
+                                     {isProcessing ? progressText : t('bg.upload_title')}
                                  </p>
                              </div>
                          )}
@@ -266,16 +263,16 @@ const BackgroundRemover: React.FC = () => {
                                 className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-medium hover:bg-primary-700 active:scale-95 transition-all select-none shadow-sm"
                             >
                                 {isComparing ? <EyeOff size={16} /> : <Eye size={16} />}
-                                <span>按住对比</span>
+                                <span>{t('bg.compare')}</span>
                             </button>
 
                             <div className="w-px h-5 bg-gray-300 mx-1"></div>
                             
                             {/* Bg Toggles */}
                             <div className="flex gap-2 px-1">
-                                <button onClick={() => setBgColor('checker')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${bgColor === 'checker' ? 'border-primary-500 ring-2 ring-primary-100 scale-110' : 'border-gray-200 hover:border-gray-300'}`} style={{ backgroundImage: `url("${checkerboardPattern}")` }} title="透明网格"></button>
-                                <button onClick={() => setBgColor('white')} className={`w-8 h-8 rounded-full border bg-white transition-all ${bgColor === 'white' ? 'border-primary-500 ring-2 ring-primary-100 scale-110' : 'border-gray-200 hover:border-gray-300'}`} title="白色背景"></button>
-                                <button onClick={() => setBgColor('black')} className={`w-8 h-8 rounded-full border bg-slate-900 transition-all ${bgColor === 'black' ? 'border-primary-500 ring-2 ring-primary-100 scale-110' : 'border-gray-200 hover:border-gray-300'}`} title="黑色背景"></button>
+                                <button onClick={() => setBgColor('checker')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${bgColor === 'checker' ? 'border-primary-500 ring-2 ring-primary-100 scale-110' : 'border-gray-200 hover:border-gray-300'}`} style={{ backgroundImage: `url("${checkerboardPattern}")` }} title="Transparent"></button>
+                                <button onClick={() => setBgColor('white')} className={`w-8 h-8 rounded-full border bg-white transition-all ${bgColor === 'white' ? 'border-primary-500 ring-2 ring-primary-100 scale-110' : 'border-gray-200 hover:border-gray-300'}`} title="White"></button>
+                                <button onClick={() => setBgColor('black')} className={`w-8 h-8 rounded-full border bg-slate-900 transition-all ${bgColor === 'black' ? 'border-primary-500 ring-2 ring-primary-100 scale-110' : 'border-gray-200 hover:border-gray-300'}`} title="Black"></button>
                             </div>
                         </div>
                     </div>
@@ -286,11 +283,8 @@ const BackgroundRemover: React.FC = () => {
                     <div className="bg-red-50 p-4 rounded-xl flex items-start gap-3 text-sm text-red-700 border border-red-100 animate-fade-in">
                         <AlertCircle size={18} className="shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-bold mb-1">出错了</p>
+                            <p className="font-bold mb-1">{t('common.error')}</p>
                             <p className="opacity-90">{error}</p>
-                            <p className="text-xs mt-1 text-red-500">
-                                请确保已将解压后的 package 文件夹内容放置在 public/models/imgly-bg-data/ 目录下，且包含 dist 文件夹。
-                            </p>
                         </div>
                     </div>
                 )}

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Category } from '../types';
-import { ChevronRight } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SidebarProps {
   categories: Category[];
@@ -18,10 +18,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectCategory,
   onSelectTool
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="py-4">
       <div className="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-        What hidden treasures are in the shoebox?
+        {t('sidebar.title')}
       </div>
       <nav className="space-y-1">
         {categories.map((category) => {
@@ -62,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                    ))}
                    {category.tools.length === 0 && (
                      <div className="px-3 py-1.5 text-xs text-gray-400 italic">
-                        开发中...
+                        {t('home.empty.desc')}
                      </div>
                    )}
                 </div>

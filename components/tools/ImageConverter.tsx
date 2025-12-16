@@ -1,19 +1,19 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { ImagePlus, Download, RefreshCw, X, ArrowRight, FileImage, Image as ImageIcon, Info } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import UPNG from 'upng-js';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ImageConverter: React.FC = () => {
-  // Settings
+  const { t } = useLanguage();
   const [outputFormat, setOutputFormat] = useLocalStorage<string>('tool-img-format', 'image/jpeg');
   const [quality, setQuality] = useLocalStorage<number>('tool-img-quality', 0.8);
   
-  // PNG Specific Settings
   const [pngCompress, setPngCompress] = useLocalStorage<boolean>('tool-img-png-compress', false);
-  const [pngColors, setPngColors] = useLocalStorage<number>('tool-img-png-colors', 256); // 2-256
+  const [pngColors, setPngColors] = useLocalStorage<number>('tool-img-png-colors', 256);
   
-  // File State
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
@@ -21,7 +21,6 @@ const ImageConverter: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Clean up object URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -51,7 +50,6 @@ const ImageConverter: React.FC = () => {
             return;
         }
 
-        // Draw white background for transparent images (if converting to JPG)
         if (outputFormat === 'image/jpeg') {
              ctx.fillStyle = '#FFFFFF';
              ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -59,14 +57,9 @@ const ImageConverter: React.FC = () => {
 
         ctx.drawImage(img, 0, 0);
 
-        // Special handling for PNG compression
         if (outputFormat === 'image/png' && pngCompress) {
              try {
                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                 // UPNG.encode(buffer, width, height, cnum, [dels])
-                 // cnum: 0 for lossless, >0 for color quantization (e.g. 256)
-                 
-                 // FIX: Wrap buffer in an array [imageData.data.buffer]
                  const pngBuffer = UPNG.encode([imageData.data.buffer], canvas.width, canvas.height, pngColors);
                  const blob = new Blob([pngBuffer], { type: 'image/png' });
                  
@@ -81,12 +74,10 @@ const ImageConverter: React.FC = () => {
                  setIsProcessing(false);
              }
         } else {
-            // Standard Canvas Conversion (JPG or Lossless PNG)
             canvas.toBlob(
               (blob) => {
                 if (blob) {
                   setConvertedBlob(blob);
-                  // Create a preview URL for the converted image result
                   const resUrl = URL.createObjectURL(blob);
                   if (previewUrl) URL.revokeObjectURL(previewUrl);
                   setPreviewUrl(resUrl);
@@ -115,19 +106,16 @@ const ImageConverter: React.FC = () => {
     }
   };
 
-  // Auto process when file or settings change
   useEffect(() => {
     if (file) {
-      // Debounce slightly for slider dragging
       const timer = setTimeout(() => {
         processImage();
-      }, 500); // Increased debounce time as UPNG is heavier
+      }, 500); 
       return () => clearTimeout(timer);
     } else {
         setConvertedBlob(null);
         setPreviewUrl(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, outputFormat, quality, pngCompress, pngColors]);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -149,7 +137,7 @@ const ImageConverter: React.FC = () => {
       if (droppedFile.type.startsWith('image/')) {
         setFile(droppedFile);
       } else {
-        setError('请上传有效的图片文件');
+        setError('Invalid image file');
       }
     }
   };
@@ -172,7 +160,6 @@ const ImageConverter: React.FC = () => {
     if (!convertedBlob || !file) return;
     
     const ext = outputFormat === 'image/jpeg' ? 'jpg' : 'png';
-    // Remove original extension and append new one
     const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
     const fileName = `${originalName}_converted.${ext}`;
     
@@ -191,14 +178,11 @@ const ImageConverter: React.FC = () => {
     setError(null);
   };
 
-  // Simple checkerboard pattern data URI (light gray/white)
   const checkerboardPattern = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgZmlsbC1vcGFjaXR5PScwLjEnPjxyZWN0IHg9JzEwJyB3aWR0aD0nMTAnIGhlaWdodD0nMTAnIC8+PHJlY3QgeT0nMTAnIHdpZHRoPScxMCcgaGVpZ2h0PScxMCcgLz48L3N2Zz4=";
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-full">
-        {/* Left Side: Upload or File Info - Fixed Width */}
         <div className="w-full lg:w-80 space-y-6 shrink-0">
-            {/* Input must be always mounted */}
             <input 
                 id="img-upload" 
                 type="file" 
@@ -221,15 +205,15 @@ const ImageConverter: React.FC = () => {
                     <div className="w-16 h-16 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-4 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                         <ImagePlus size={32} />
                     </div>
-                    <p className="text-lg font-bold text-gray-800 mb-1">导入图片</p>
-                    <p className="text-sm text-gray-500 px-4">支持 JPG, PNG, WEBP, GIF 等</p>
+                    <p className="text-lg font-bold text-gray-800 mb-1">{t('img_conv.upload_title')}</p>
+                    <p className="text-sm text-gray-500 px-4">{t('img_conv.upload_desc')}</p>
                 </div>
             ) : (
                 <div className="bg-white border border-gray-200 rounded-xl p-6 relative">
                      <button 
                         onClick={reset}
                         className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
-                        title="Remove file"
+                        title={t('common.clear')}
                     >
                         <X size={20} />
                     </button>
@@ -239,15 +223,14 @@ const ImageConverter: React.FC = () => {
                         </div>
                         <div className="min-w-0">
                             <h3 className="font-bold text-gray-900 line-clamp-1 break-all">{file.name}</h3>
-                            <p className="text-sm text-gray-500">原始大小: {formatSize(file.size)}</p>
+                            <p className="text-sm text-gray-500">{t('img_conv.upload_title')}: {formatSize(file.size)}</p>
                         </div>
                     </div>
                     
-                    {/* Settings Panel */}
                     <div className="space-y-6 pt-6 border-t border-gray-100">
                          <div className="grid grid-cols-1 gap-6">
                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">目标格式</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">{t('img_conv.target_format')}</label>
                                 <div className="flex bg-gray-100 p-1 rounded-lg">
                                     <button
                                         onClick={() => setOutputFormat('image/jpeg')}
@@ -267,7 +250,7 @@ const ImageConverter: React.FC = () => {
                              {outputFormat === 'image/jpeg' && (
                                  <div className="animate-fade-in">
                                     <div className="flex justify-between mb-2">
-                                        <label className="text-sm font-medium text-gray-700">图像质量</label>
+                                        <label className="text-sm font-medium text-gray-700">{t('img_conv.quality')}</label>
                                         <span className="text-sm font-mono text-primary-600">{(quality * 100).toFixed(0)}%</span>
                                     </div>
                                     <input
@@ -280,8 +263,8 @@ const ImageConverter: React.FC = () => {
                                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                                     />
                                     <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                        <span>低 (小)</span>
-                                        <span>高 (大)</span>
+                                        <span>{t('img_conv.low')}</span>
+                                        <span>{t('img_conv.high')}</span>
                                     </div>
                                  </div>
                              )}
@@ -291,7 +274,7 @@ const ImageConverter: React.FC = () => {
                                      <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex gap-2">
                                          <div className="shrink-0 mt-0.5"><Info size={16}/></div>
                                          <p className="text-xs">
-                                             原生 PNG 为无损。开启<strong>“有损压缩”</strong>可大幅减小体积。
+                                             {t('img_conv.png_tip')}
                                          </p>
                                      </div>
 
@@ -302,13 +285,13 @@ const ImageConverter: React.FC = () => {
                                             onChange={(e) => setPngCompress((e.target as HTMLInputElement).checked)}
                                             className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                                         />
-                                        <span className="font-medium text-gray-700 text-sm">启用 PNG 有损压缩</span>
+                                        <span className="font-medium text-gray-700 text-sm">{t('img_conv.png_compress')}</span>
                                      </label>
 
                                      {pngCompress && (
                                          <div className="pl-8 animate-fade-in">
                                             <div className="flex justify-between mb-2">
-                                                <label className="text-sm font-medium text-gray-700">颜色深度</label>
+                                                <label className="text-sm font-medium text-gray-700">{t('img_conv.colors')}</label>
                                                 <span className="text-sm font-mono text-primary-600">{pngColors}</span>
                                             </div>
                                             <input
@@ -336,11 +319,10 @@ const ImageConverter: React.FC = () => {
             )}
         </div>
 
-        {/* Right Side: Preview & Action - Fluid Width */}
         <div className="flex-1 flex flex-col min-w-0">
             <div className="bg-gray-50 border border-gray-200 rounded-xl flex-1 flex flex-col relative overflow-hidden min-h-[400px]">
                 <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
-                    <span className="font-semibold text-gray-700">预览结果</span>
+                    <span className="font-semibold text-gray-700">{t('img_conv.preview')}</span>
                     {convertedBlob && (
                          <span className={`text-sm font-mono font-medium ${convertedBlob.size < file!.size ? 'text-green-600' : 'text-orange-600'}`}>
                             {formatSize(convertedBlob.size)} 
@@ -359,14 +341,14 @@ const ImageConverter: React.FC = () => {
                     {isProcessing ? (
                         <div className="flex flex-col items-center gap-3 text-primary-600">
                             <RefreshCw className="animate-spin" size={32} />
-                            <span className="font-medium">处理中...</span>
+                            <span className="font-medium">{t('common.processing')}</span>
                         </div>
                     ) : previewUrl ? (
                         <img src={previewUrl} alt="Preview" className="max-w-full max-h-[600px] object-contain shadow-lg bg-white" />
                     ) : (
                         <div className="text-gray-400 flex flex-col items-center">
                             <ArrowRight size={48} className="mb-2 opacity-20" />
-                            <span>上传图片查看预览</span>
+                            <span>{t('img_conv.upload_title')}</span>
                         </div>
                     )}
                 </div>
@@ -383,7 +365,7 @@ const ImageConverter: React.FC = () => {
                         `}
                     >
                         <Download size={20} />
-                        下载转换后的图片
+                        {t('img_conv.download')}
                     </button>
                 </div>
             </div>

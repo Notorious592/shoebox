@@ -1,8 +1,11 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { Crop, Upload, Download, RefreshCw, X, FileImage, ArrowLeftToLine, ArrowRightToLine, ArrowUpToLine, ArrowDownToLine, FoldHorizontal, FoldVertical, Crosshair } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ImageCropper: React.FC = () => {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   
@@ -267,8 +270,8 @@ const ImageCropper: React.FC = () => {
                 <div className="w-16 h-16 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-4 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                     <Crop size={32} />
                 </div>
-                <p className="text-lg font-bold text-gray-800 mb-1">打开图片</p>
-                <p className="text-sm text-gray-500 px-4">自由裁剪或按比例截取</p>
+                <p className="text-lg font-bold text-gray-800 mb-1">{t('crop.open')}</p>
+                <p className="text-sm text-gray-500 px-4">{t('crop.desc')}</p>
             </div>
         ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-6 relative">
@@ -286,30 +289,30 @@ const ImageCropper: React.FC = () => {
                  </div>
 
                  <div className="space-y-4 pt-4 border-t border-gray-100">
-                     <h4 className="text-sm font-semibold text-gray-800">对齐控制</h4>
+                     <h4 className="text-sm font-semibold text-gray-800">{t('crop.align')}</h4>
                      
                      {/* Alignment Controls - Unified Style */}
                      <div className="space-y-2">
                         <div className="flex gap-2 justify-between">
-                             <button onClick={() => align('left')} className={ButtonStyle} title="左对齐"><ArrowLeftToLine size={18}/></button>
-                             <button onClick={() => align('center-x')} className={ButtonStyle} title="水平居中"><FoldHorizontal size={18}/></button>
-                             <button onClick={() => align('right')} className={ButtonStyle} title="右对齐"><ArrowRightToLine size={18}/></button>
+                             <button onClick={() => align('left')} className={ButtonStyle} title="Left"><ArrowLeftToLine size={18}/></button>
+                             <button onClick={() => align('center-x')} className={ButtonStyle} title="Center X"><FoldHorizontal size={18}/></button>
+                             <button onClick={() => align('right')} className={ButtonStyle} title="Right"><ArrowRightToLine size={18}/></button>
                              <div className="w-px bg-gray-200 mx-1"></div>
-                             <button onClick={() => align('center-all')} className={ButtonStyle} title="完全居中"><Crosshair size={18}/></button>
+                             <button onClick={() => align('center-all')} className={ButtonStyle} title="Center"><Crosshair size={18}/></button>
                         </div>
                         <div className="flex gap-2 justify-between">
-                             <button onClick={() => align('top')} className={ButtonStyle} title="顶部对齐"><ArrowUpToLine size={18}/></button>
-                             <button onClick={() => align('center-y')} className={ButtonStyle} title="垂直居中"><FoldVertical size={18}/></button>
-                             <button onClick={() => align('bottom')} className={ButtonStyle} title="底部对齐"><ArrowDownToLine size={18}/></button>
+                             <button onClick={() => align('top')} className={ButtonStyle} title="Top"><ArrowUpToLine size={18}/></button>
+                             <button onClick={() => align('center-y')} className={ButtonStyle} title="Center Y"><FoldVertical size={18}/></button>
+                             <button onClick={() => align('bottom')} className={ButtonStyle} title="Bottom"><ArrowDownToLine size={18}/></button>
                              <div className="w-px bg-gray-200 mx-1"></div>
                              <div className="w-[34px]"></div> {/* Spacer */}
                         </div>
                      </div>
 
-                     <h4 className="text-sm font-semibold text-gray-800 pt-2">尺寸与位置</h4>
+                     <h4 className="text-sm font-semibold text-gray-800 pt-2">{t('crop.size_pos')}</h4>
                      <div className="grid grid-cols-2 gap-3">
                          <div>
-                             <label className="text-xs text-gray-500 block mb-1">X 坐标</label>
+                             <label className="text-xs text-gray-500 block mb-1">X</label>
                              <input 
                                 type="number" value={cropX} 
                                 onChange={(e) => handleInputChange('x', (e.target as HTMLInputElement).value)}
@@ -317,7 +320,7 @@ const ImageCropper: React.FC = () => {
                              />
                          </div>
                          <div>
-                             <label className="text-xs text-gray-500 block mb-1">Y 坐标</label>
+                             <label className="text-xs text-gray-500 block mb-1">Y</label>
                              <input 
                                 type="number" value={cropY} 
                                 onChange={(e) => handleInputChange('y', (e.target as HTMLInputElement).value)}
@@ -325,7 +328,7 @@ const ImageCropper: React.FC = () => {
                              />
                          </div>
                          <div>
-                             <label className="text-xs text-gray-500 block mb-1">宽度 (W)</label>
+                             <label className="text-xs text-gray-500 block mb-1">{t('resize.width')}</label>
                              <input 
                                 type="number" value={cropW} 
                                 onChange={(e) => handleInputChange('w', (e.target as HTMLInputElement).value)}
@@ -333,7 +336,7 @@ const ImageCropper: React.FC = () => {
                              />
                          </div>
                          <div>
-                             <label className="text-xs text-gray-500 block mb-1">高度 (H)</label>
+                             <label className="text-xs text-gray-500 block mb-1">{t('resize.height')}</label>
                              <input 
                                 type="number" value={cropH} 
                                 onChange={(e) => handleInputChange('h', (e.target as HTMLInputElement).value)}
@@ -343,7 +346,7 @@ const ImageCropper: React.FC = () => {
                      </div>
 
                      <div className="pt-2">
-                         <label className="block text-sm font-medium text-gray-700 mb-2">导出格式</label>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">{t('resize.export_format')}</label>
                          <div className="flex gap-2">
                              <label className="flex-1 cursor-pointer border border-gray-200 p-2 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">
                                  <input type="radio" checked={format === 'jpeg'} onChange={() => setFormat('jpeg')} />
@@ -364,8 +367,8 @@ const ImageCropper: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
           <div className="bg-gray-50 border border-gray-200 rounded-xl flex-1 flex flex-col relative overflow-hidden min-h-[500px]">
                <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center z-10">
-                 <span className="font-semibold text-gray-700">编辑与预览</span>
-                 {file && <span className="text-xs text-gray-400">拖拽方框移动，右侧/底部/右下角调整大小</span>}
+                 <span className="font-semibold text-gray-700">{t('img_conv.preview')}</span>
+                 {file && <span className="text-xs text-gray-400">{t('crop.drag_tip')}</span>}
                </div>
 
                <div 
@@ -400,21 +403,21 @@ const ImageCropper: React.FC = () => {
                                <div 
                                    className="absolute bottom-[-6px] right-[-6px] w-4 h-4 bg-primary-600 border-2 border-white rounded-full cursor-se-resize z-20 hover:scale-125 transition-transform shadow-sm"
                                    onMouseDown={(e) => onMouseDownHandle(e, 'se')}
-                                   title="等比缩放"
+                                   title="Scale"
                                />
                                
                                {/* Resize Handle (E) - Width Only */}
                                <div 
                                    className="absolute top-1/2 right-[-6px] -translate-y-1/2 w-3 h-6 bg-white border border-gray-400 rounded-full cursor-e-resize z-20 hover:bg-primary-50 transition-colors shadow-sm"
                                    onMouseDown={(e) => onMouseDownHandle(e, 'e')}
-                                   title="调整宽度"
+                                   title="Resize Width"
                                />
 
                                {/* Resize Handle (S) - Height Only */}
                                <div 
                                    className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-6 h-3 bg-white border border-gray-400 rounded-full cursor-s-resize z-20 hover:bg-primary-50 transition-colors shadow-sm"
                                    onMouseDown={(e) => onMouseDownHandle(e, 's')}
-                                   title="调整高度"
+                                   title="Resize Height"
                                />
                                
                                {/* Grid lines */}
@@ -433,7 +436,7 @@ const ImageCropper: React.FC = () => {
                    ) : (
                        <div className="text-gray-400 flex flex-col items-center">
                             <FileImage size={48} className="mb-2 opacity-20" />
-                            <span>等待上传</span>
+                            <span>{t('common.waiting')}</span>
                        </div>
                    )}
                </div>
@@ -450,7 +453,7 @@ const ImageCropper: React.FC = () => {
                         `}
                     >
                         {isProcessing ? <RefreshCw className="animate-spin" size={20} /> : <Download size={20} />}
-                        {isProcessing ? '处理中...' : `导出裁剪区域 (${cropW} x ${cropH})`}
+                        {isProcessing ? t('common.processing') : `${t('crop.export')} (${cropW} x ${cropH})`}
                     </button>
                </div>
           </div>

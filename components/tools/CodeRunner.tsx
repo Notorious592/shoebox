@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, RotateCcw, Terminal, Loader2, Code2, AlertCircle, ChevronDown, Settings2, Plus, X, Copy, Check, Info } from 'lucide-react';
 import hljs from 'highlight.js';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // --- Types ---
 
@@ -271,6 +272,7 @@ End Module`,
 };
 
 const CodeRunner: React.FC = () => {
+  const { t } = useLanguage();
   // --- State ---
   const [runtimes, setRuntimes] = useState<Runtime[]>([]);
   const [loadingRuntimes, setLoadingRuntimes] = useState(true);
@@ -572,7 +574,7 @@ const CodeRunner: React.FC = () => {
            {/* Row 1: Language & Version */}
            <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-3 min-w-[240px]">
-                    <div className="text-gray-400 shrink-0 px-1 hover:text-primary-600 transition-colors" title="选择运行环境">
+                    <div className="text-gray-400 shrink-0 px-1 hover:text-primary-600 transition-colors" title={t('code.env')}>
                         <Code2 size={18} />
                     </div>
                     
@@ -611,7 +613,7 @@ const CodeRunner: React.FC = () => {
                                             ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-default select-none' 
                                             : 'bg-gray-50 text-gray-600 border-gray-200 focus:ring-primary-500 focus:border-primary-500 cursor-pointer'}
                                     `}
-                                    title={isSingleVersion ? "当前语言仅提供此版本" : "选择运行时版本"}
+                                    title={isSingleVersion ? t('code.single_ver') : t('code.select_ver')}
                                 >
                                     {groupRuntimes.map(r => (
                                         <option key={`${r.language}:${r.version}`} value={`${r.language}:${r.version}`}>
@@ -631,7 +633,7 @@ const CodeRunner: React.FC = () => {
 
                 {/* Args Input - Dynamic List */}
                 <div className="flex-1 min-w-[200px] flex items-center">
-                    <div className="text-gray-400 shrink-0 mr-2 hover:text-primary-600 transition-colors" title="命令行参数配置">
+                    <div className="text-gray-400 shrink-0 mr-2 hover:text-primary-600 transition-colors" title={t('code.args')}>
                         <Settings2 size={18} className={`${supportsArgs ? '' : 'text-gray-300'}`} />
                     </div>
                     
@@ -644,8 +646,8 @@ const CodeRunner: React.FC = () => {
                                             type="text" 
                                             value={arg}
                                             onChange={(e) => handleArgChange(index, e.target.value)}
-                                            placeholder={`Arg ${index + 1}`}
-                                            title={`命令行参数 ${index + 1}`}
+                                            placeholder={t('code.arg_n', { n: index + 1 })}
+                                            title={t('code.arg_n', { n: index + 1 })}
                                             className="w-full text-sm py-1.5 px-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors font-mono text-gray-700 pr-7"
                                         />
                                         {(args.length > 1 || arg) && (
@@ -662,14 +664,14 @@ const CodeRunner: React.FC = () => {
                                 <button
                                     onClick={addArg}
                                     className="p-1.5 bg-gray-50 border border-gray-200 text-gray-500 rounded-lg hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition-colors"
-                                    title="添加参数"
+                                    title={t('code.add_arg')}
                                 >
                                     <Plus size={14} />
                                 </button>
                             </>
                         ) : (
                             <div className="text-sm text-gray-300 italic select-none border border-transparent py-1.5">
-                                该语言不支持命令行参数
+                                {t('code.no_args')}
                             </div>
                         )}
                     </div>
@@ -685,7 +687,7 @@ const CodeRunner: React.FC = () => {
                             setArgs(['']);
                         }}
                         className="p-2.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        title="重置代码与参数"
+                        title={t('code.reset')}
                     >
                         <RotateCcw size={18} />
                     </button>
@@ -695,7 +697,7 @@ const CodeRunner: React.FC = () => {
                         className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95 font-bold whitespace-nowrap"
                     >
                         {isRunning ? <Loader2 className="animate-spin" size={18} /> : <Play size={18} fill="currentColor" />}
-                        {isRunning ? '运行中' : '运行'}
+                        {isRunning ? t('code.running') : t('code.run')}
                     </button>
                 </div>
            </div>
@@ -747,7 +749,7 @@ const CodeRunner: React.FC = () => {
                <div className="bg-[#252526] px-4 py-3 flex items-center justify-between border-b border-[#333]">
                    <span className="text-gray-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                        <Terminal size={14} />
-                       Console Output
+                       {t('code.output')}
                    </span>
                    <div className="flex items-center gap-3">
                        {isRunning && <Loader2 className="animate-spin text-primary-500" size={14} />}
@@ -755,7 +757,7 @@ const CodeRunner: React.FC = () => {
                            <button 
                                onClick={copyOutput} 
                                className={`p-1.5 rounded transition-all ${outputCopied ? 'bg-green-500/20 text-green-400' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
-                               title="复制输出"
+                               title={t('code.copy_output')}
                            >
                                {outputCopied ? <Check size={14} /> : <Copy size={14} />}
                            </button>
@@ -772,7 +774,7 @@ const CodeRunner: React.FC = () => {
                    ) : output ? (
                        <pre className="text-gray-300 whitespace-pre-wrap break-all pb-6">{output}</pre>
                    ) : (
-                       <div className="text-gray-600 italic select-none">等待运行...</div>
+                       <div className="text-gray-600 italic select-none">{t('code.waiting')}</div>
                    )}
                </div>
 

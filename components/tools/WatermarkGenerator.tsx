@@ -1,11 +1,14 @@
+
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
 import { Stamp, Download, RefreshCw, X, Image as ImageIcon } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const WatermarkGenerator: React.FC = () => {
+  const { t } = useLanguage();
   // Settings
-  const [text, setText] = useLocalStorage<string>('tool-wm-text', '仅供资料审核使用');
+  const [text, setText] = useLocalStorage<string>('tool-wm-text', t('wm.default_text'));
   const [color, setColor] = useLocalStorage<string>('tool-wm-color', '#B8B8B8');
   const [alpha, setAlpha] = useLocalStorage<number>('tool-wm-alpha', 0.4);
   const [angle, setAngle] = useLocalStorage<number>('tool-wm-angle', 25);
@@ -158,27 +161,27 @@ const WatermarkGenerator: React.FC = () => {
                     <div className="text-center px-4">
                         <ImageIcon className="mx-auto text-gray-400 group-hover:text-primary-600 mb-2 transition-colors" size={32} />
                         <p className="font-medium text-gray-700 truncate max-w-[200px]">{file.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">点击更换底图</p>
+                        <p className="text-xs text-gray-500 mt-1">{t('wm.select_bg')}</p>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center text-center">
                         <div className="w-12 h-12 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-3 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                             <Stamp size={24} />
                         </div>
-                        <p className="text-base font-bold text-gray-800">选择底图</p>
-                        <p className="text-xs text-gray-500 mt-1">拖拽或点击导入</p>
+                        <p className="text-base font-bold text-gray-800">{t('wm.select_bg')}</p>
+                        <p className="text-xs text-gray-500 mt-1">{t('wm.drag_tip')}</p>
                     </div>
                 )}
              </div>
 
              <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">水印文字</label>
+                 <label className="text-sm font-medium text-gray-700">{t('wm.text')}</label>
                  <input 
                     type="text" 
                     value={text} 
                     onChange={(e) => setText((e.target as HTMLInputElement).value)}
                     className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500"
-                    placeholder="请输入水印内容"
+                    placeholder="Input text"
                  />
              </div>
         </div>
@@ -187,7 +190,7 @@ const WatermarkGenerator: React.FC = () => {
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
             <div>
                 <div className="flex justify-between mb-1">
-                    <label className="text-sm text-gray-600">颜色</label>
+                    <label className="text-sm text-gray-600">{t('wm.color')}</label>
                     <span className="text-xs font-mono text-gray-400">{color}</span>
                 </div>
                 <div className="flex gap-2">
@@ -208,7 +211,7 @@ const WatermarkGenerator: React.FC = () => {
 
             <div>
                 <div className="flex justify-between mb-1">
-                    <label className="text-sm text-gray-600">透明度</label>
+                    <label className="text-sm text-gray-600">{t('wm.alpha')}</label>
                     <span className="text-xs text-primary-600">{alpha}</span>
                 </div>
                 <input 
@@ -220,7 +223,7 @@ const WatermarkGenerator: React.FC = () => {
 
             <div>
                 <div className="flex justify-between mb-1">
-                    <label className="text-sm text-gray-600">角度</label>
+                    <label className="text-sm text-gray-600">{t('wm.angle')}</label>
                     <span className="text-xs text-primary-600">{angle}°</span>
                 </div>
                 <input 
@@ -232,7 +235,7 @@ const WatermarkGenerator: React.FC = () => {
 
              <div>
                 <div className="flex justify-between mb-1">
-                    <label className="text-sm text-gray-600">间距 (Space)</label>
+                    <label className="text-sm text-gray-600">{t('wm.space')}</label>
                     <span className="text-xs text-primary-600">{space}</span>
                 </div>
                 <input 
@@ -244,7 +247,7 @@ const WatermarkGenerator: React.FC = () => {
             
             <div>
                 <div className="flex justify-between mb-1">
-                    <label className="text-sm text-gray-600">字号 (Size)</label>
+                    <label className="text-sm text-gray-600">{t('wm.size')}</label>
                     <span className="text-xs text-primary-600">{size}x</span>
                 </div>
                 <input 
@@ -256,7 +259,7 @@ const WatermarkGenerator: React.FC = () => {
 
             <div className="flex items-end gap-4">
                  <div className="flex-1">
-                    <label className="block text-sm text-gray-600 mb-2">下载格式</label>
+                    <label className="block text-sm text-gray-600 mb-2">{t('resize.export_format')}</label>
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                         <button 
                             onClick={() => setFormat('jpeg')}
@@ -280,7 +283,7 @@ const WatermarkGenerator: React.FC = () => {
                             onChange={(e) => setAutoRefresh((e.target as HTMLInputElement).checked)}
                             className="rounded text-primary-600 focus:ring-primary-500"
                          />
-                         <span className="text-sm text-gray-700">实时刷新</span>
+                         <span className="text-sm text-gray-700">{t('wm.auto_refresh')}</span>
                      </label>
                  </div>
             </div>
@@ -294,7 +297,7 @@ const WatermarkGenerator: React.FC = () => {
               className="px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
               <RefreshCw size={16} className="inline mr-2" />
-              手动刷新
+              {t('wm.manual_refresh')}
           </button>
           <button
               onClick={handleDownload}
@@ -302,7 +305,7 @@ const WatermarkGenerator: React.FC = () => {
               className="px-6 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 shadow-sm"
           >
               <Download size={16} className="inline mr-2" />
-              下载图片
+              {t('wm.download')}
           </button>
       </div>
 
@@ -313,7 +316,7 @@ const WatermarkGenerator: React.FC = () => {
           ) : (
               <div className="text-gray-400 text-center">
                   <ImageIcon size={48} className="mx-auto mb-2 opacity-20" />
-                  <p>预览区域</p>
+                  <p>{t('img_conv.preview')}</p>
               </div>
           )}
       </div>

@@ -1,9 +1,10 @@
 
 /// <reference lib="dom" />
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Film, Upload, FileVideo, Terminal, Copy, Check, Info, Cpu, Zap, Volume2, RefreshCw, Captions, Settings2, FolderInput, ExternalLink, Calculator, AlertTriangle, Plus, Trash2, FileText, Server, Smartphone, Monitor } from 'lucide-react';
 // @ts-ignore
 import MediaInfoFactory from 'mediainfo.js';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TrackInfo {
   id: number; // Index in the list
@@ -45,7 +46,7 @@ type PresetKey = 'compat' | 'compress' | 'high' | 'nas';
 interface PresetConfig {
     id: PresetKey;
     title: string;
-    desc: string;
+    descKey: string;
     icon: React.ReactNode;
     config: {
         container: string;
@@ -56,37 +57,6 @@ interface PresetConfig {
         scale: string;
     }
 }
-
-const PRESETS: PresetConfig[] = [
-    {
-        id: 'nas',
-        title: 'NAS 存档',
-        desc: 'H.265 (CRF 23) + MP4 (1080p)。针对群晖优化，画质清晰，支持缩略图预览与苹果设备播放。',
-        icon: <Server size={20} />,
-        config: { container: 'mp4', videoEncoder: 'libx265', crf: 23, preset: 'medium', audioEncoder: 'aac', scale: '1080p' }
-    },
-    {
-        id: 'compat',
-        title: '兼容优先',
-        desc: 'H.264 (CRF 23) + MP4。兼容性最好，适合老旧设备、浏览器直接播放与分享。',
-        icon: <Smartphone size={20} />,
-        config: { container: 'mp4', videoEncoder: 'libx264', crf: 23, preset: 'medium', audioEncoder: 'aac', scale: 'original' }
-    },
-    {
-        id: 'compress',
-        title: '极限压缩',
-        desc: 'H.265 (CRF 28)。牺牲部分画质以换取最小体积，适合存档冷数据。',
-        icon: <Zap size={20} />,
-        config: { container: 'mp4', videoEncoder: 'libx265', crf: 28, preset: 'slow', audioEncoder: 'aac', scale: 'original' }
-    },
-    {
-        id: 'high',
-        title: '画质优先',
-        desc: 'H.264 (CRF 18) + MKV。接近无损的视觉体验，保留原始音轨，体积较大。',
-        icon: <Monitor size={20} />,
-        config: { container: 'mkv', videoEncoder: 'libx264', crf: 18, preset: 'slow', audioEncoder: 'copy', scale: 'original' }
-    }
-];
 
 const formatDuration = (secondsStr: string): string => {
   const seconds = parseFloat(secondsStr);
@@ -123,6 +93,7 @@ const isBitmapSubtitle = (format: string) => {
 };
 
 const VideoCommandGenerator: React.FC = () => {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
@@ -157,6 +128,37 @@ const VideoCommandGenerator: React.FC = () => {
   
   // Estimation
   const [estimatedSize, setEstimatedSize] = useState<string | null>(null);
+
+  const PRESETS: PresetConfig[] = useMemo(() => [
+    {
+        id: 'nas',
+        title: t('vid.presets.nas'),
+        descKey: 'vid.preset_nas_desc',
+        icon: <Server size={20} />,
+        config: { container: 'mp4', videoEncoder: 'libx265', crf: 23, preset: 'medium', audioEncoder: 'aac', scale: '1080p' }
+    },
+    {
+        id: 'compat',
+        title: t('vid.presets.compat'),
+        descKey: 'vid.preset_compat_desc',
+        icon: <Smartphone size={20} />,
+        config: { container: 'mp4', videoEncoder: 'libx264', crf: 23, preset: 'medium', audioEncoder: 'aac', scale: 'original' }
+    },
+    {
+        id: 'compress',
+        title: t('vid.presets.compress'),
+        descKey: 'vid.preset_compress_desc',
+        icon: <Zap size={20} />,
+        config: { container: 'mp4', videoEncoder: 'libx265', crf: 28, preset: 'slow', audioEncoder: 'aac', scale: 'original' }
+    },
+    {
+        id: 'high',
+        title: t('vid.presets.high'),
+        descKey: 'vid.preset_high_desc',
+        icon: <Monitor size={20} />,
+        config: { container: 'mkv', videoEncoder: 'libx264', crf: 18, preset: 'slow', audioEncoder: 'copy', scale: 'original' }
+    }
+  ], [t]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -431,7 +433,7 @@ const VideoCommandGenerator: React.FC = () => {
     sortedSubs.forEach(id => {
         const subTrack = metadata?.subtitles.find(s => s.id === id);
         if (isMp4 && subTrack && isBitmapSubtitle(subTrack.format)) {
-             newWarnings.push(`已忽略内部字幕 #${id+1} (${subTrack.format}): 图形字幕不支持封装到 MP4。`);
+             newWarnings.push(t('vid.warn.bitmap', { id: (id+1), fmt: subTrack.format }));
         } else {
              cmd += ` -map 0:s:${id}`;
              outputSubIndex++;
@@ -503,7 +505,7 @@ const VideoCommandGenerator: React.FC = () => {
 
     setCommand(cmd);
     setWarnings(newWarnings);
-  }, [file, workDir, videoEncoder, crf, preset, audioEncoder, scale, customScaleW, container, selectedAudioTracks, selectedSubTracks, metadata, externalSubs]);
+  }, [file, workDir, videoEncoder, crf, preset, audioEncoder, scale, customScaleW, container, selectedAudioTracks, selectedSubTracks, metadata, externalSubs, t]);
 
   const copyToClipboard = () => {
     (navigator as any).clipboard.writeText(command);
@@ -548,14 +550,14 @@ const VideoCommandGenerator: React.FC = () => {
             <div className="w-16 h-16 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-4 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                 <Film size={32} />
             </div>
-            <p className="text-lg font-bold text-gray-800 mb-1">导入视频</p>
-            <p className="text-sm text-gray-500">支持 MP4, MKV, MOV 等格式<br/>本地分析元数据</p>
+            <p className="text-lg font-bold text-gray-800 mb-1">{t('vid.upload_title')}</p>
+            <p className="text-sm text-gray-500">{t('vid.upload_desc')}<br/>{t('home.badge').split(':')[0]}</p>
         </div>
 
         {isAnalyzing && (
             <div className="p-4 bg-blue-50 text-blue-700 rounded-lg flex items-center gap-2 animate-fade-in shrink-0">
                 <RefreshCw className="animate-spin" size={16} />
-                <span>正在分析视频元数据...</span>
+                <span>{t('vid.analyzing')}</span>
             </div>
         )}
 
@@ -569,34 +571,34 @@ const VideoCommandGenerator: React.FC = () => {
         {metadata && (
             <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
                 <div className="p-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 flex items-center gap-2 shrink-0">
-                    <Info size={16} /> 视频源信息
+                    <Info size={16} /> {t('vid.meta_title')}
                 </div>
                 
                 <div className="p-4 overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm mb-4">
-                        <span className="text-gray-500">格式:</span>
+                        <span className="text-gray-500">{t('vid.info.format')}:</span>
                         <span className="font-mono text-gray-900">{metadata.format}</span>
-                        <span className="text-gray-500">时长:</span>
+                        <span className="text-gray-500">{t('vid.info.duration')}:</span>
                         <span className="font-mono text-gray-900">{metadata.duration}</span>
-                        <span className="text-gray-500">大小:</span>
+                        <span className="text-gray-500">{t('vid.info.size')}:</span>
                         <span className="font-mono text-gray-900">{metadata.fileSize}</span>
                     </div>
                     
                     {/* Video Tracks */}
                     <div className="mb-4">
-                        <div className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-1"><Film size={14}/> 视频流</div>
+                        <div className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-1"><Film size={14}/> {t('vid.video_stream')}</div>
                         {metadata.video.map((v, i) => (
                             <div key={i} className="pl-2 border-l-2 border-primary-200 ml-1 text-xs text-gray-600 space-y-0.5">
                                 <div><span className="font-mono text-primary-700 font-bold">{getFriendlyCodecName(v.codec)}</span></div>
                                 <div>{v.width}x{v.height} @ {v.frameRate} fps</div>
-                                <div>码率: {v.bitRate}</div>
+                                <div>{v.bitRate}</div>
                             </div>
                         ))}
                     </div>
 
                     {/* Audio Tracks Selection */}
                     <div className="mb-4">
-                        <div className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-1"><Volume2 size={14}/> 音频流 (多选)</div>
+                        <div className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-1"><Volume2 size={14}/> {t('vid.audio_stream')}</div>
                         {metadata.audio.length > 0 ? (
                             <div className="space-y-1">
                                 {metadata.audio.map((a) => (
@@ -615,13 +617,13 @@ const VideoCommandGenerator: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-gray-400 text-xs italic">无音频流</div>
+                            <div className="text-gray-400 text-xs italic">{t('vid.no_audio')}</div>
                         )}
                     </div>
 
                     {/* Subtitle Tracks Selection */}
                     <div>
-                        <div className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-1"><Captions size={14}/> 字幕流 (多选)</div>
+                        <div className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-1"><Captions size={14}/> {t('vid.sub_stream')}</div>
                         {metadata.subtitles.length > 0 ? (
                             <div className="space-y-1">
                                 {metadata.subtitles.map((s) => (
@@ -640,7 +642,7 @@ const VideoCommandGenerator: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-gray-400 text-xs italic">无内置字幕</div>
+                            <div className="text-gray-400 text-xs italic">{t('vid.info.no_sub')}</div>
                         )}
                     </div>
                 </div>
@@ -650,11 +652,11 @@ const VideoCommandGenerator: React.FC = () => {
         {/* External Subtitles */}
         <div className="flex-1 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col min-h-[150px]">
             <div className="p-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-2"><Captions size={16} /> 外挂字幕</div>
+                <div className="flex items-center gap-2"><Captions size={16} /> {t('vid.ext_sub')}</div>
                 <button 
                     onClick={() => document.getElementById('sub-upload')?.click()}
                     className="p-1 hover:bg-gray-200 rounded text-gray-600 transition-colors"
-                    title="添加字幕文件"
+                    title={t('vid.ext_sub.add')}
                 >
                     <Plus size={16} />
                 </button>
@@ -665,7 +667,7 @@ const VideoCommandGenerator: React.FC = () => {
                 {externalSubs.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-1">
                         <FileText size={24} className="opacity-20" />
-                        <span>暂无外挂字幕</span>
+                        <span>{t('vid.ext_sub.empty')}</span>
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -705,7 +707,7 @@ const VideoCommandGenerator: React.FC = () => {
           {/* Settings Panel */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-y-auto custom-scrollbar">
               <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Settings2 size={20}/> 转码配置</h2>
+                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Settings2 size={20}/> {t('vid.config_title')}</h2>
               </div>
 
               {/* Presets Cards */}
@@ -729,7 +731,7 @@ const VideoCommandGenerator: React.FC = () => {
                                   {isActive && <Check size={14} className="ml-auto text-primary-600" />}
                               </div>
                               <p className="text-xs text-gray-500 leading-tight">
-                                  {preset.desc}
+                                  {t(preset.descKey)}
                               </p>
                           </button>
                       );
@@ -739,7 +741,7 @@ const VideoCommandGenerator: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Container */}
                   <div className="space-y-3">
-                      <label className="text-sm font-medium text-gray-700 block">封装格式 (Container)</label>
+                      <label className="text-sm font-medium text-gray-700 block">{t('vid.container')}</label>
                       <div className="flex bg-gray-100 p-1 rounded-lg">
                           {['mp4', 'mkv', 'mov'].map(c => (
                               <button 
@@ -755,24 +757,24 @@ const VideoCommandGenerator: React.FC = () => {
 
                   {/* Video Encoder */}
                   <div className="space-y-3">
-                      <label className="text-sm font-medium text-gray-700 block">视频编码 (Video Codec)</label>
+                      <label className="text-sm font-medium text-gray-700 block">{t('vid.v_codec')}</label>
                       <select 
                         value={videoEncoder} 
                         onChange={(e) => setVideoEncoder(e.target.value)}
                         className="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
                       >
-                          <option value="libx264">H.264 (libx264) - 最通用</option>
-                          <option value="libx265">H.265 (libx265) - 高压缩</option>
+                          <option value="libx264">H.264 (libx264)</option>
+                          <option value="libx265">H.265 (libx265)</option>
                           <option value="h264_nvenc">NVIDIA H.264 (nvenc)</option>
                           <option value="hevc_nvenc">NVIDIA H.265 (nvenc)</option>
                           <option value="libvpx-vp9">VP9 (Web friendly)</option>
-                          <option value="copy">Copy (不转码)</option>
+                          <option value="copy">Copy</option>
                       </select>
                   </div>
 
                   {/* Audio Encoder */}
                   <div className="space-y-3">
-                      <label className="text-sm font-medium text-gray-700 block">音频编码 (Audio Codec)</label>
+                      <label className="text-sm font-medium text-gray-700 block">{t('vid.a_codec')}</label>
                       <select 
                         value={audioEncoder} 
                         onChange={(e) => setAudioEncoder(e.target.value)}
@@ -781,8 +783,8 @@ const VideoCommandGenerator: React.FC = () => {
                           <option value="aac">AAC (128k)</option>
                           <option value="libmp3lame">MP3</option>
                           <option value="ac3">AC3</option>
-                          <option value="copy">Copy (不转码)</option>
-                          <option value="none">无音频 (Mute)</option>
+                          <option value="copy">Copy</option>
+                          <option value="none">Mute ({t('vid.no_audio')})</option>
                       </select>
                   </div>
 
@@ -790,8 +792,8 @@ const VideoCommandGenerator: React.FC = () => {
                   {videoEncoder !== 'copy' && (
                       <div className="space-y-3">
                           <div className="flex justify-between">
-                              <label className="text-sm font-medium text-gray-700 block">画质系数 (CRF: {crf})</label>
-                              <span className="text-xs text-gray-500">{crf < 18 ? '无损级' : crf < 24 ? '高质量' : '低画质'}</span>
+                              <label className="text-sm font-medium text-gray-700 block">{t('vid.crf').replace('(CRF)', `(CRF: ${crf})`)}</label>
+                              <span className="text-xs text-gray-500">{crf < 18 ? t('vid.crf_lossless') : crf < 24 ? t('vid.crf_high') : t('vid.crf_low')}</span>
                           </div>
                           <input 
                             type="range" min="0" max="51" step="1"
@@ -799,9 +801,9 @@ const VideoCommandGenerator: React.FC = () => {
                             className="w-full h-2 bg-gray-200 rounded-lg accent-primary-600 cursor-pointer"
                           />
                           <div className="flex justify-between text-xs text-gray-400">
-                              <span>0 (高)</span>
-                              <span>23 (标准)</span>
-                              <span>51 (低)</span>
+                              <span>0 (High)</span>
+                              <span>23</span>
+                              <span>51 (Low)</span>
                           </div>
                       </div>
                   )}
@@ -809,35 +811,35 @@ const VideoCommandGenerator: React.FC = () => {
                   {/* Preset Speed */}
                   {videoEncoder !== 'copy' && !videoEncoder.includes('nvenc') && (
                       <div className="space-y-3">
-                           <label className="text-sm font-medium text-gray-700 block">编码速度 (Preset)</label>
+                           <label className="text-sm font-medium text-gray-700 block">{t('vid.preset')}</label>
                            <select 
                              value={preset} onChange={(e) => setPreset(e.target.value)}
                              className="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-sm"
                            >
-                               <option value="ultrafast">Ultrafast (最快/大)</option>
+                               <option value="ultrafast">Ultrafast</option>
                                <option value="superfast">Superfast</option>
                                <option value="veryfast">Veryfast</option>
                                <option value="faster">Faster</option>
                                <option value="fast">Fast</option>
-                               <option value="medium">Medium (平衡)</option>
+                               <option value="medium">Medium</option>
                                <option value="slow">Slow</option>
                                <option value="slower">Slower</option>
-                               <option value="veryslow">Veryslow (最小)</option>
+                               <option value="veryslow">Veryslow</option>
                            </select>
                       </div>
                   )}
 
                   {/* Resolution Scale */}
                   <div className="space-y-3">
-                       <label className="text-sm font-medium text-gray-700 block">分辨率缩放</label>
+                       <label className="text-sm font-medium text-gray-700 block">{t('vid.scale')}</label>
                        <select 
                          value={scale} onChange={(e) => setScale(e.target.value)}
                          className="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-sm"
                        >
-                           <option value="original">原始分辨率</option>
-                           <option value="1080p">限制最大 1080p</option>
-                           <option value="720p">限制最大 720p</option>
-                           <option value="custom">自定义宽度...</option>
+                           <option value="original">{t('vid.scale.orig')}</option>
+                           <option value="1080p">{t('vid.scale.limit', { res: '1080p' })}</option>
+                           <option value="720p">{t('vid.scale.limit', { res: '720p' })}</option>
+                           <option value="custom">{t('vid.scale.custom')}</option>
                        </select>
                        {scale === 'custom' && (
                            <div className="flex items-center gap-2 mt-2">
@@ -848,7 +850,7 @@ const VideoCommandGenerator: React.FC = () => {
                                  className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                                  placeholder="Width px"
                                />
-                               <span className="text-xs text-gray-500 whitespace-nowrap">px (Auto Height)</span>
+                               <span className="text-xs text-gray-500 whitespace-nowrap">{t('vid.scale.px_auto')}</span>
                            </div>
                        )}
                   </div>
@@ -858,16 +860,16 @@ const VideoCommandGenerator: React.FC = () => {
               <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <FolderInput size={16} />
-                      工作目录 (可选)
+                      {t('vid.work_dir')}
                   </div>
                   <input 
                     type="text" 
                     value={workDir}
                     onChange={(e) => setWorkDir(e.target.value)}
-                    placeholder="例如: C:\Videos 或 /Users/name/Movies (留空则使用相对路径)"
+                    placeholder={t('vid.work_dir.ph')}
                     className="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-mono text-gray-600"
                   />
-                  <p className="text-xs text-gray-400">设置后，输入/输出文件将使用完整路径，方便在任意位置运行命令。</p>
+                  <p className="text-xs text-gray-400">{t('vid.work_dir.hint')}</p>
               </div>
 
               {/* Estimation */}
@@ -875,8 +877,8 @@ const VideoCommandGenerator: React.FC = () => {
                   <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100 flex items-start gap-3 text-green-800">
                       <Calculator size={20} className="mt-0.5" />
                       <div>
-                          <div className="font-bold">预估输出大小: ~{estimatedSize}</div>
-                          <div className="text-xs opacity-80 mt-1">仅供参考，实际大小受画面复杂度影响较大。NVENC 编码通常比 x264/x265 生成的文件稍大。</div>
+                          <div className="font-bold">{t('vid.est_output')}: ~{estimatedSize}</div>
+                          <div className="text-xs opacity-80 mt-1">{t('vid.est.note')}</div>
                       </div>
                   </div>
               )}
@@ -894,12 +896,12 @@ const VideoCommandGenerator: React.FC = () => {
                     className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
                   >
                       {copied ? <Check size={14} /> : <Copy size={14} />}
-                      {copied ? 'Copied' : 'Copy'}
+                      {copied ? t('common.copied') : t('common.copy')}
                   </button>
               </div>
               <div className="flex-1 p-4 overflow-auto custom-scrollbar-dark relative">
                   <pre className="font-mono text-sm text-green-400 whitespace-pre-wrap break-all leading-relaxed">
-                      {command || '# 等待文件与配置...'}
+                      {command || t('vid.cmd.waiting')}
                   </pre>
                   
                   {warnings.length > 0 && (

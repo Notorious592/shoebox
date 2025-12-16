@@ -1,8 +1,11 @@
+
 /// <reference lib="dom" />
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Scaling, Download, RefreshCw, X, FileImage, Lock, Unlock, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ImageResizer: React.FC = () => {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
@@ -172,8 +175,8 @@ const ImageResizer: React.FC = () => {
                 <div className="w-16 h-16 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-4 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                     <Scaling size={32} />
                 </div>
-                <p className="text-lg font-bold text-gray-800 mb-1">导入图片</p>
-                <p className="text-sm text-gray-500 px-4">支持拖拽，调整尺寸与比例</p>
+                <p className="text-lg font-bold text-gray-800 mb-1">{t('img_conv.upload_title')}</p>
+                <p className="text-sm text-gray-500 px-4">{t('img_conv.upload_desc')}</p>
             </div>
          ) : (
              <div className="bg-white border border-gray-200 rounded-xl p-6 relative">
@@ -193,14 +196,14 @@ const ImageResizer: React.FC = () => {
                  {/* Resize Controls */}
                  <div className="space-y-6 pt-4 border-t border-gray-100">
                      <div className="flex bg-gray-100 p-1 rounded-lg">
-                        <button onClick={() => changeMode('percent')} className={`flex-1 py-1.5 text-xs font-medium rounded ${mode === 'percent' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>百分比</button>
-                        <button onClick={() => changeMode('pixel')} className={`flex-1 py-1.5 text-xs font-medium rounded ${mode === 'pixel' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>像素值</button>
+                        <button onClick={() => changeMode('percent')} className={`flex-1 py-1.5 text-xs font-medium rounded ${mode === 'percent' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>{t('resize.mode_percent')}</button>
+                        <button onClick={() => changeMode('pixel')} className={`flex-1 py-1.5 text-xs font-medium rounded ${mode === 'pixel' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>{t('resize.mode_pixel')}</button>
                      </div>
 
                      {mode === 'percent' ? (
                          <div className="space-y-2">
                              <div className="flex justify-between text-sm">
-                                 <span className="text-gray-600">缩放比例</span>
+                                 <span className="text-gray-600">{t('resize.scale')}</span>
                                  <span className="font-mono text-primary-600">{scalePercent}%</span>
                              </div>
                              <input 
@@ -216,21 +219,21 @@ const ImageResizer: React.FC = () => {
                                 <span className="cursor-pointer hover:text-primary-600" onClick={() => handlePercentChange(100)}>100%</span>
                              </div>
                              <div className="pt-2 text-center text-xs text-gray-500 font-mono">
-                                结果: {targetW} x {targetH}
+                                {targetW} x {targetH}
                              </div>
                          </div>
                      ) : (
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <div className="flex-1">
-                                    <label className="text-xs text-gray-500 mb-1 block">宽度 (W)</label>
+                                    <label className="text-xs text-gray-500 mb-1 block">{t('resize.width')}</label>
                                     <input type="number" value={targetW} onChange={(e) => handleDimensionChange('w', (e.target as HTMLInputElement).value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm" />
                                 </div>
                                 <button onClick={() => setLockRatio(!lockRatio)} className={`mt-5 p-1.5 rounded ${lockRatio ? 'bg-primary-50 text-primary-600' : 'text-gray-400'}`}>
                                     {lockRatio ? <Lock size={16} /> : <Unlock size={16} />}
                                 </button>
                                 <div className="flex-1">
-                                    <label className="text-xs text-gray-500 mb-1 block">高度 (H)</label>
+                                    <label className="text-xs text-gray-500 mb-1 block">{t('resize.height')}</label>
                                     <input type="number" value={targetH} onChange={(e) => handleDimensionChange('h', (e.target as HTMLInputElement).value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm" />
                                 </div>
                             </div>
@@ -238,7 +241,7 @@ const ImageResizer: React.FC = () => {
                      )}
 
                      <div className="pt-2">
-                         <label className="block text-sm font-medium text-gray-700 mb-2">导出格式</label>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">{t('resize.export_format')}</label>
                          <div className="flex gap-2">
                              <label className="flex-1 cursor-pointer border border-gray-200 p-2 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">
                                  <input type="radio" checked={format === 'jpeg'} onChange={() => setFormat('jpeg')} />
@@ -259,8 +262,8 @@ const ImageResizer: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
          <div className="bg-gray-50 border border-gray-200 rounded-xl flex-1 flex flex-col relative overflow-hidden min-h-[400px]">
             <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center z-10">
-                 <span className="font-semibold text-gray-700">实时预览</span>
-                 {file && <span className="text-xs text-gray-400">预览已模拟导出尺寸与比例</span>}
+                 <span className="font-semibold text-gray-700">{t('img_conv.preview')}</span>
+                 {file && <span className="text-xs text-gray-400">{t('resize.preview_note')}</span>}
             </div>
             
             <div 
@@ -287,7 +290,7 @@ const ImageResizer: React.FC = () => {
                 ) : (
                     <div className="text-gray-400 flex flex-col items-center">
                         <ArrowRight size={48} className="mb-2 opacity-20" />
-                        <span>等待上传</span>
+                        <span>{t('common.waiting')}</span>
                     </div>
                 )}
             </div>
@@ -304,7 +307,7 @@ const ImageResizer: React.FC = () => {
                     `}
                 >
                     {isProcessing ? <RefreshCw className="animate-spin" size={20} /> : <Download size={20} />}
-                    {isProcessing ? '处理中...' : `导出图片 (${targetW} x ${targetH})`}
+                    {isProcessing ? t('common.processing') : `${t('resize.export')} (${targetW} x ${targetH})`}
                 </button>
             </div>
          </div>

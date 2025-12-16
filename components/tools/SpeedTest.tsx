@@ -1,7 +1,9 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Square, Wifi, Globe, Server, ArrowDown, ArrowUp, Activity, Gauge, MapPin, Award, AlertTriangle } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // --- Worker Code (Inlined for portability) ---
 const WORKER_CODE = `
@@ -85,7 +87,7 @@ async function runChinaTest() {
     if (validFiles.length >= 2) break; 
   }
 
-  if (validFiles.length === 0) throw new Error("无法连接到测速节点 (npmmirror)");
+  if (validFiles.length === 0) throw new Error("Cannot connect to speed test node (npmmirror)");
 
   const CONCURRENCY = 6;
   totalBytes = 0;
@@ -133,15 +135,15 @@ async function runGlobalTest() {
 
   // Use M-Lab Locate API v2 for NDT7 (Standard)
   const locateRes = await fetch('https://locate.measurementlab.net/v2/nearest/ndt/ndt7');
-  if (!locateRes.ok) throw new Error('无法定位 M-Lab 服务器');
+  if (!locateRes.ok) throw new Error('Cannot locate M-Lab server');
   
   const data = await locateRes.json();
-  if (!data.results || data.results.length === 0) throw new Error('未找到可用节点');
+  if (!data.results || data.results.length === 0) throw new Error('No available nodes found');
   
   const server = data.results[0];
   
   if (!server.urls || !server.urls['wss:///ndt/v7/download'] || !server.urls['wss:///ndt/v7/upload']) {
-      throw new Error('节点返回格式不兼容 NDT7');
+      throw new Error('Node incompatible with NDT7');
   }
 
   const dlUrl = server.urls['wss:///ndt/v7/download'];
@@ -411,7 +413,7 @@ const SpeedGauge: React.FC<{
         </div>
       </div>
       <div className="font-bold text-gray-600 flex items-center gap-2">
-          {label === '下载' ? <ArrowDown size={16}/> : <ArrowUp size={16}/>}
+          {label.includes('Download') || label.includes('下载') ? <ArrowDown size={16}/> : <ArrowUp size={16}/>}
           {label}
       </div>
     </div>
@@ -434,21 +436,23 @@ const MetricCard: React.FC<{ icon: React.ReactNode, label: string, value: string
 );
 
 // --- Helper for Broadband Label ---
-const getBandwidthLabel = (bps: number) => {
+const getBandwidthLabel = (bps: number, t: any) => {
     const mbps = bps / 1_000_000;
-    if (mbps > 850) return "千兆级宽带 (1000M+)";
-    if (mbps > 450) return "500M 宽带";
-    if (mbps > 280) return "300M 宽带";
-    if (mbps > 180) return "200M 宽带";
-    if (mbps > 90) return "100M 宽带";
-    if (mbps > 45) return "50M 宽带";
-    if (mbps > 15) return "20M 宽带";
-    return "基础宽带";
+    if (mbps > 850) return t('speed.bw_1000');
+    if (mbps > 450) return t('speed.bw_n', { n: 500 });
+    if (mbps > 280) return t('speed.bw_n', { n: 300 });
+    if (mbps > 180) return t('speed.bw_n', { n: 200 });
+    if (mbps > 90) return t('speed.bw_n', { n: 100 });
+    if (mbps > 45) return t('speed.bw_n', { n: 50 });
+    if (mbps > 15) return t('speed.bw_n', { n: 20 });
+    return t('speed.bw_basic');
 };
 
 // --- Main Component ---
 
 const SpeedTest: React.FC = () => {
+  const { t } = useLanguage();
+  
   // --- Auto-detect Mode ---
   const detectDefaultMode = (): TestMode => {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -662,7 +666,7 @@ const SpeedTest: React.FC = () => {
 
           workerRef.current.onerror = (e) => {
               console.error("Worker error:", e);
-              setError("Worker 初始化失败");
+              setError("Worker initialization failed");
               setState('done');
           };
 
@@ -670,7 +674,7 @@ const SpeedTest: React.FC = () => {
 
       } catch (e) {
           console.error("Failed to create worker:", e);
-          setError("浏览器不支持 Worker");
+          setError("Browser does not support Worker");
           setState('done');
       }
   };
@@ -700,7 +704,7 @@ const SpeedTest: React.FC = () => {
                     }`}
                 >
                     <Server size={16} />
-                    国内模式
+                    {t('speed.mode_cn')}
                 </button>
                 <button
                     onClick={() => { if(state === 'idle' || state === 'done') setMode('global'); }}
@@ -710,14 +714,14 @@ const SpeedTest: React.FC = () => {
                     }`}
                 >
                     <Globe size={16} />
-                    国际模式
+                    {t('speed.mode_global')}
                 </button>
             </div>
 
             {/* Node Info Badge */}
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-xs font-medium text-gray-500 rounded-xl border border-gray-100 sm:mr-2 w-full sm:w-auto justify-center">
                 <MapPin size={14} className="text-primary-500"/>
-                <span>{mode === 'china' ? '节点: 中国大陆优化 (阿里云 CDN)' : '节点: 全球 M-Lab 分布式网络'}</span>
+                <span>{mode === 'china' ? t('speed.node_cn') : t('speed.node_global')}</span>
             </div>
         </div>
 
@@ -742,7 +746,7 @@ const SpeedTest: React.FC = () => {
                 <div className="relative z-10 flex flex-col sm:flex-row justify-around items-center gap-8 py-4">
                     <SpeedGauge 
                         value={metrics.downloadBps} 
-                        label="下载" 
+                        label={t('speed.download')} 
                         // Active if: Currently downloading OR if we have data (even if test done)
                         isActive={state === 'download' || metrics.downloadBps > 0} 
                         colorClass="text-cyan-500"
@@ -751,15 +755,15 @@ const SpeedTest: React.FC = () => {
                     {mode === 'global' ? (
                         <SpeedGauge 
                             value={metrics.uploadBps} 
-                            label="上传" 
+                            label={t('speed.upload')}
                             isActive={state === 'upload' || metrics.uploadBps > 0} 
                             colorClass="text-purple-500"
                         />
                     ) : (
-                        <div className="opacity-50 grayscale flex flex-col items-center select-none" title="国内模式仅支持下载测试">
+                        <div className="opacity-50 grayscale flex flex-col items-center select-none" title={t('speed.cn_tip')}>
                              <SpeedGauge 
                                 value={0} 
-                                label="上传 (不支持)" 
+                                label={t('speed.unsupported')} 
                                 isActive={false} 
                                 colorClass="text-gray-300"
                             />
@@ -772,7 +776,7 @@ const SpeedTest: React.FC = () => {
                     {(state === 'download' || state === 'upload') && (
                         <div className="w-full">
                             <div className="flex justify-between text-xs font-bold text-gray-400 uppercase mb-2">
-                                <span>{state === 'download' ? 'Downloading...' : 'Uploading...'}</span>
+                                <span>{state === 'download' ? t('speed.loading_download') : t('speed.loading_upload')}</span>
                                 <span>{currentProgress.toFixed(0)}%</span>
                             </div>
                             <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -789,12 +793,12 @@ const SpeedTest: React.FC = () => {
                             {stoppedByUser ? (
                                 <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100 text-sm font-bold">
                                     <AlertTriangle size={16} />
-                                    <span>测试已手动终止</span>
+                                    <span>{t('speed.stopped')}</span>
                                 </div>
                             ) : metrics.downloadBps > 0 && (
                                 <div className="flex items-center justify-center gap-2 text-primary-700 bg-primary-50 px-4 py-2 rounded-lg border border-primary-100 text-sm font-bold">
                                     <Award size={16} />
-                                    <span>预估宽带等级: {getBandwidthLabel(metrics.downloadBps)}</span>
+                                    <span>{t('speed.bandwidth')}: {getBandwidthLabel(metrics.downloadBps, t)}</span>
                                 </div>
                             )}
                         </div>
@@ -805,11 +809,11 @@ const SpeedTest: React.FC = () => {
             {/* Right: Metrics & Controls */}
             <div className="space-y-6 flex flex-col">
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4 flex-1">
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">网络延迟</h3>
+                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">{t('speed.latency')}</h3>
                     
                     <MetricCard 
                         icon={<Activity size={18} />}
-                        label="Ping (延迟)"
+                        label={t('speed.ping_val')}
                         value={metrics.latency > 0 ? metrics.latency.toFixed(0) : '--'}
                         unit="ms"
                         highlight={metrics.latency > 0}
@@ -817,7 +821,7 @@ const SpeedTest: React.FC = () => {
                     
                     <MetricCard 
                         icon={<Wifi size={18} />}
-                        label="Jitter (抖动)"
+                        label={t('speed.jitter_val')}
                         value={metrics.jitter > 0 ? metrics.jitter.toFixed(0) : '--'}
                         unit="ms"
                         highlight={metrics.jitter > 0}
@@ -832,10 +836,10 @@ const SpeedTest: React.FC = () => {
                         >
                             <span className="flex items-center gap-2">
                                 <Play fill="currentColor" size={20} /> 
-                                {hasResult ? '重新测速' : '开始测速'}
+                                {hasResult ? t('speed.restart') : t('speed.start')}
                             </span>
                             <span className="text-[10px] font-normal opacity-80 group-hover:opacity-100">
-                                {mode === 'china' ? '并发多线程下载' : 'WebSocket 双向测试'}
+                                {mode === 'china' ? t('speed.desc_cn') : t('speed.desc_global')}
                             </span>
                         </button>
                     ) : (
@@ -845,10 +849,10 @@ const SpeedTest: React.FC = () => {
                         >
                             <span className="flex items-center gap-2">
                                 <Square fill="currentColor" size={18} />
-                                停止测试
+                                {t('speed.stop')}
                             </span>
                             <span className="text-[10px] font-normal opacity-60">
-                                正在进行中...
+                                {t('speed.running')}
                             </span>
                         </button>
                     )}
@@ -858,12 +862,12 @@ const SpeedTest: React.FC = () => {
 
         {/* Info Footer */}
         <div className="text-center text-xs text-gray-400 mt-8 space-y-2">
-            <p>测速结果受网络环境、设备性能及服务器繁忙程度影响。建议在不同时段多次测试以获取准确数据。</p>
+            <p>{t('speed.footer_note')}</p>
             {mode === 'china' && (
                 <p>
-                    受浏览器并发限制，本工具可能无法完全跑满高带宽。更精准的国内测速推荐访问：
+                    {t('speed.footer_cn_limit')}
                     <a href="https://test.nju.edu.cn/" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline mx-1">南京大学测速站</a>
-                    或
+                    /
                     <a href="https://test.ustc.edu.cn/" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline mx-1">中科大测速站</a>
                 </p>
             )}

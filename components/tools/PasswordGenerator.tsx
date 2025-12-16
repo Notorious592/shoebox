@@ -1,10 +1,12 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Copy, Check } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const PasswordGenerator: React.FC = () => {
-  // Use persistent state for all configurations and the result
+  const { t } = useLanguage();
   const [password, setPassword] = useLocalStorage<string>('tool-pwd-result', '');
   const [length, setLength] = useLocalStorage<number>('tool-pwd-length', 16);
   const [includeUppercase, setIncludeUppercase] = useLocalStorage<boolean>('tool-pwd-upper', true);
@@ -43,12 +45,10 @@ const PasswordGenerator: React.FC = () => {
     setCopied(false);
   }, [length, includeUppercase, includeLowercase, includeNumbers, includeSymbols, setPassword]);
 
-  // Only generate on mount if empty, otherwise keep previous
   useEffect(() => {
     if (!password) {
       generatePassword();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const copyToClipboard = () => {
@@ -63,13 +63,13 @@ const PasswordGenerator: React.FC = () => {
       {/* Display Area */}
       <div className="relative group">
         <div className="w-full p-6 text-center bg-gray-50 border border-gray-200 rounded-xl text-3xl font-mono text-gray-800 break-all min-h-[100px] flex items-center justify-center">
-           {password || <span className="text-gray-400 text-lg">请选择至少一种字符类型</span>}
+           {password || <span className="text-gray-400 text-lg">{t('pwd.empty')}</span>}
         </div>
         <div className="absolute top-2 right-2 flex gap-2">
            <button 
              onClick={copyToClipboard}
              className="p-2 bg-white text-gray-500 rounded-lg shadow-sm border border-gray-200 hover:text-primary-600 hover:border-primary-200 transition-all"
-             title="Copy"
+             title={t('common.copy')}
            >
              {copied ? <Check size={20} className="text-green-500"/> : <Copy size={20} />}
            </button>
@@ -87,7 +87,7 @@ const PasswordGenerator: React.FC = () => {
       <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-6">
         <div>
           <div className="flex justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">密码长度: {length}</label>
+            <label className="text-sm font-medium text-gray-700">{t('pwd.length')}: {length}</label>
           </div>
           <input
             type="range"
@@ -112,7 +112,7 @@ const PasswordGenerator: React.FC = () => {
               onChange={(e) => setIncludeUppercase((e.target as HTMLInputElement).checked)}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
-            <span className="text-gray-700">大写字母 (A-Z)</span>
+            <span className="text-gray-700">{t('pwd.upper')}</span>
           </label>
           <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
             <input
@@ -121,7 +121,7 @@ const PasswordGenerator: React.FC = () => {
               onChange={(e) => setIncludeLowercase((e.target as HTMLInputElement).checked)}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
-            <span className="text-gray-700">小写字母 (a-z)</span>
+            <span className="text-gray-700">{t('pwd.lower')}</span>
           </label>
           <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
             <input
@@ -130,7 +130,7 @@ const PasswordGenerator: React.FC = () => {
               onChange={(e) => setIncludeNumbers((e.target as HTMLInputElement).checked)}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
-            <span className="text-gray-700">数字 (0-9)</span>
+            <span className="text-gray-700">{t('pwd.number')}</span>
           </label>
           <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
             <input
@@ -139,7 +139,7 @@ const PasswordGenerator: React.FC = () => {
               onChange={(e) => setIncludeSymbols((e.target as HTMLInputElement).checked)}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
-            <span className="text-gray-700">特殊符号 (!@#$)</span>
+            <span className="text-gray-700">{t('pwd.symbol')}</span>
           </label>
         </div>
         
@@ -147,7 +147,7 @@ const PasswordGenerator: React.FC = () => {
             onClick={generatePassword}
             className="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm active:scale-[0.99] transform"
         >
-            生成新密码
+            {t('pwd.generate')}
         </button>
       </div>
     </div>

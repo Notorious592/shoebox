@@ -1,9 +1,12 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { Grid, Upload, Download, RefreshCw, X, FileImage, ArrowRight } from 'lucide-react';
 import JSZip from 'jszip';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ImageGridSlicer: React.FC = () => {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
@@ -143,8 +146,8 @@ const ImageGridSlicer: React.FC = () => {
                 <div className="w-16 h-16 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center mb-4 text-gray-400 group-hover:text-primary-600 transition-colors shadow-sm">
                     <Grid size={32} />
                 </div>
-                <p className="text-lg font-bold text-gray-800 mb-1">选择图片</p>
-                <p className="text-sm text-gray-500 px-4">制作九宫格或自定义切片</p>
+                <p className="text-lg font-bold text-gray-800 mb-1">{t('slice.select')}</p>
+                <p className="text-sm text-gray-500 px-4">{t('slice.desc')}</p>
             </div>
         ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-6 relative">
@@ -166,13 +169,13 @@ const ImageGridSlicer: React.FC = () => {
                      <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-2">
                         <Grid size={16} className="text-blue-600 mt-0.5 shrink-0" />
                         <p className="text-xs text-blue-700">
-                            将图片切分为 {rows} 行 {cols} 列，共 <strong>{rows * cols}</strong> 张小图。
+                            {rows} x {cols} = <strong>{rows * cols}</strong>
                         </p>
                      </div>
 
                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs text-gray-500 block mb-1">行数 (Rows)</label>
+                            <label className="text-xs text-gray-500 block mb-1">{t('slice.rows')}</label>
                             <input 
                                 type="number" min="1" max="20"
                                 value={rows} 
@@ -181,7 +184,7 @@ const ImageGridSlicer: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-gray-500 block mb-1">列数 (Cols)</label>
+                            <label className="text-xs text-gray-500 block mb-1">{t('slice.cols')}</label>
                             <input 
                                 type="number" min="1" max="20"
                                 value={cols} 
@@ -193,7 +196,7 @@ const ImageGridSlicer: React.FC = () => {
                      
                      <div className="text-xs text-gray-500 space-y-1">
                         <div className="flex justify-between">
-                            <span>单张尺寸:</span>
+                            <span>{t('slice.single_size')}:</span>
                             <span className="font-mono">{Math.floor(imgW/cols)} x {Math.floor(imgH/rows)} px</span>
                         </div>
                      </div>
@@ -206,11 +209,10 @@ const ImageGridSlicer: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
          <div className="bg-gray-50 border border-gray-200 rounded-xl flex-1 flex flex-col relative overflow-hidden min-h-[400px]">
             <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center z-10">
-                 <span className="font-semibold text-gray-700">预览结果</span>
+                 <span className="font-semibold text-gray-700">{t('img_conv.preview')}</span>
                  {file && (
                      <div className="flex items-center gap-4 text-xs">
-                        <span className="text-primary-600 font-medium">滚动鼠标缩放 {(zoom * 100).toFixed(0)}%</span>
-                        <span className="text-gray-400">虚线表示切割位置</span>
+                        <span className="text-primary-600 font-medium">{t('slice.zoom_tip')} {(zoom * 100).toFixed(0)}%</span>
                      </div>
                  )}
             </div>
@@ -257,7 +259,7 @@ const ImageGridSlicer: React.FC = () => {
                 ) : (
                     <div className="text-gray-400 flex flex-col items-center">
                         <ArrowRight size={48} className="mb-2 opacity-20" />
-                        <span>等待上传</span>
+                        <span>{t('common.waiting')}</span>
                     </div>
                 )}
             </div>
@@ -274,7 +276,7 @@ const ImageGridSlicer: React.FC = () => {
                     `}
                 >
                     {isProcessing ? <RefreshCw className="animate-spin" size={20} /> : <Download size={20} />}
-                    {isProcessing ? '打包中...' : `下载 ZIP 包 (${rows * cols} 张图片)`}
+                    {isProcessing ? t('common.processing') : `${t('slice.download_zip')} (${rows * cols})`}
                 </button>
             </div>
          </div>

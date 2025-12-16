@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, Copy, Check, Calendar, ArrowRight, Settings2, RotateCcw, ArrowDown, Moon, Sun, ArrowLeftRight, ArrowDownUp, Sparkles, Clock, Hourglass } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Lunar, Solar } from 'lunar-javascript';
 
 // --- Types & Helpers ---
@@ -18,23 +19,6 @@ const getTraditionalMonthName = (month: number): string => {
     
     const map = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
     return map[month] + '月';
-};
-
-const getWeekName = (date: Date): string => {
-    const map = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-    return map[date.getDay()];
-};
-
-const getZodiac = (date: Date): string => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const signs = ['摩羯座', '水瓶座', '双鱼座', '白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座'];
-    const startDays = [20, 19, 21, 20, 21, 21, 22, 23, 23, 23, 22, 22];
-    
-    if (day < startDays[month - 1]) {
-        return signs[month - 1 === 0 ? 11 : month - 2];
-    }
-    return signs[month - 1];
 };
 
 const getSupportedTimezones = (): string[] => {
@@ -65,6 +49,7 @@ const getTimezoneOffset = (timeZone: string) => {
 // --- Extracted Components ---
 
 const CopyBtn = ({ text, className = "" }: { text: string, className?: string }) => {
+    const { t } = useLanguage();
     const [copied, setCopied] = useState(false);
     const onCopy = (e: React.MouseEvent) => {
         e.stopPropagation(); // prevent parent clicks
@@ -76,7 +61,7 @@ const CopyBtn = ({ text, className = "" }: { text: string, className?: string })
         <button 
             onClick={onCopy}
             className={`p-1.5 rounded transition-all duration-200 ${copied ? 'bg-green-100 text-green-600' : 'text-gray-400 hover:text-primary-600 hover:bg-primary-50'} ${className}`}
-            title="复制"
+            title={t('common.copy')}
         >
             {copied ? <Check size={14} /> : <Copy size={14} />}
         </button>
@@ -88,12 +73,14 @@ const TimeInput = ({
     mode, 
     val, 
     onChange, 
-    onModeChange 
+    onModeChange,
+    t
 }: { 
     mode: InputMode, 
     val: string, 
     onChange: (v: string) => void, 
-    onModeChange: (m: InputMode) => void 
+    onModeChange: (m: InputMode) => void,
+    t: any
 }) => (
     <div className="flex flex-col gap-3 w-full">
         {/* Segmented Control */}
@@ -107,7 +94,7 @@ const TimeInput = ({
                 }`}
             >
                 <Calendar size={14} />
-                日期时间
+                {t('tool.timestamp.name')}
             </button>
             <button
                 onClick={() => onModeChange('timestamp')}
@@ -118,7 +105,7 @@ const TimeInput = ({
                 }`}
             >
                 <Clock size={14} />
-                时间戳
+                {t('time.current_ts').replace('Current ', '')}
             </button>
         </div>
 
@@ -146,6 +133,7 @@ const TimeInput = ({
 );
 
 const TimestampConverter: React.FC = () => {
+    const { t, language } = useLanguage();
     // --- Global Settings ---
     const [unit, setUnit] = useLocalStorage<TimeUnit>('tool-ts-unit', 'ms');
     const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -190,6 +178,23 @@ const TimestampConverter: React.FC = () => {
     // --- Memoized Data ---
     const supportedZones = React.useMemo(() => getSupportedTimezones(), []);
 
+    // --- Helpers with Translation ---
+    const getWeekName = (date: Date): string => {
+        return t(`time.week_${date.getDay()}`);
+    };
+
+    const getZodiacKey = (date: Date): string => {
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const signs = ['capricorn', 'aquarius', 'pisces', 'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius'];
+        const startDays = [20, 19, 21, 20, 21, 21, 22, 23, 23, 23, 22, 22];
+        
+        if (day < startDays[month - 1]) {
+            return signs[month - 1 === 0 ? 11 : month - 2];
+        }
+        return signs[month - 1];
+    };
+
     // --- Realtime Effect ---
     useEffect(() => {
         if (isPaused) return;
@@ -210,7 +215,9 @@ const TimestampConverter: React.FC = () => {
     // --- Format Helper ---
     const formatDateTime = (ts: number, zone: string) => {
         try {
-            return new Intl.DateTimeFormat('zh-CN', {
+            // Use current language for locale
+            const locale = language === 'zh' ? 'zh-CN' : 'en-US';
+            return new Intl.DateTimeFormat(locale, {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit', second: '2-digit',
                 hour12: false,
@@ -223,7 +230,16 @@ const TimestampConverter: React.FC = () => {
     
     const getWeekday = (ts: number, zone: string) => {
         try {
-            return new Intl.DateTimeFormat('zh-CN', {
+            // Force Sunday... format via key lookup to ensure translation match
+            const d = new Date(ts);
+            // Since we display weekday based on timestamp, we need to respect timezone.
+            // Intl handles this, but returns localized string directly.
+            // To use our Translation Keys, we need to get the day index (0-6) relative to that timezone.
+            // Simple hack: format as 'weekday: "narrow"' or similar might not give index.
+            // Better: trust Intl for display if we want perfect timezone support, OR manually calc day index.
+            // For simplicity and translation consistency, let's use Intl with current locale:
+            const locale = language === 'zh' ? 'zh-CN' : 'en-US';
+            return new Intl.DateTimeFormat(locale, {
                 weekday: 'long',
                 timeZone: zone,
             }).format(ts);
@@ -242,12 +258,12 @@ const TimestampConverter: React.FC = () => {
         }
         let ts = parseFloat(inputTs);
         if (isNaN(ts)) {
-            setTsToDateResult('无效的时间戳');
+            setTsToDateResult(t('time.invalid_ts'));
             return;
         }
         if (unit === 's') ts *= 1000;
         setTsToDateResult(formatDateTime(ts, displayZone));
-    }, [inputTs, unit, displayZone]);
+    }, [inputTs, unit, displayZone, language]);
 
     // 2. Date -> Timestamp
     useEffect(() => {
@@ -258,7 +274,7 @@ const TimestampConverter: React.FC = () => {
         try {
             const d = new Date(inputDate);
             if (isNaN(d.getTime())) {
-                setDateToTsResult('无效日期');
+                setDateToTsResult(t('time.invalid_date'));
                 return;
             }
             let ts = d.getTime();
@@ -270,7 +286,7 @@ const TimestampConverter: React.FC = () => {
         } catch (e) {
             setDateToTsResult('Error');
         }
-    }, [inputDate, unit]);
+    }, [inputDate, unit, language]);
 
     // --- Duration Logic ---
     useEffect(() => {
@@ -303,9 +319,9 @@ const TimestampConverter: React.FC = () => {
         const seconds = Math.floor(diff / 1000);
         const ms = diff % 1000;
 
-        setDiffResult(`${days}天 ${hours}小时 ${minutes}分 ${seconds}秒 ${unit === 'ms' ? ms + '毫秒' : ''}`);
+        setDiffResult(`${days}${t('time.day_s')} ${hours}${t('time.hour_s')} ${minutes}${t('time.minute_s')} ${seconds}${t('time.second_s')} ${unit === 'ms' ? ms + t('time.millisecond_s') : ''}`);
 
-    }, [startMode, endMode, startVal, endVal, unit]);
+    }, [startMode, endMode, startVal, endVal, unit, language]);
 
     // --- Lunar Logic ---
     
@@ -315,7 +331,7 @@ const TimestampConverter: React.FC = () => {
         // Reset to noon to avoid timezone edge cases on pure dates
         d.setHours(12, 0, 0, 0); 
         updateFromSolar(d);
-    }, []);
+    }, [language]); // Refresh when language changes to update translation text
 
     const updateFromSolar = (d: Date) => {
         if (isNaN(d.getTime())) return;
@@ -323,7 +339,7 @@ const TimestampConverter: React.FC = () => {
         // Update Solar UI
         setSolarStr(d.toISOString().slice(0, 10)); // YYYY-MM-DD
         setSolarWeekday(getWeekName(d));
-        setSolarZodiac(getZodiac(d));
+        setSolarZodiac(t(`time.zodiac_${getZodiacKey(d)}`));
 
         // Calculate Lunar
         const solar = Solar.fromDate(d);
@@ -353,7 +369,7 @@ const TimestampConverter: React.FC = () => {
             // Update Solar UI
             setSolarStr(jsDate.toISOString().slice(0, 10));
             setSolarWeekday(getWeekName(jsDate));
-            setSolarZodiac(getZodiac(jsDate));
+            setSolarZodiac(t(`time.zodiac_${getZodiacKey(jsDate)}`));
             
             // Update Text
             generateResultText(lunar);
@@ -364,6 +380,8 @@ const TimestampConverter: React.FC = () => {
 
     const generateResultText = (lunar: Lunar) => {
         // Format: 甲辰(龙)年 四月 十五
+        // Note: Lunar output is predominantly Chinese due to library limitations.
+        // We keep the main text in Chinese characters as it's specific to Chinese Calendar.
         const yearGanZhi = lunar.getYearInGanZhi();
         const zodiac = lunar.getYearShengXiao();
         const monthStr = (lunar.getMonth() < 0 ? '闰' : '') + getTraditionalMonthName(Math.abs(lunar.getMonth()));
@@ -468,7 +486,7 @@ const TimestampConverter: React.FC = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full border transition-colors ${isPaused ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-primary-50 text-primary-600 border-primary-100'}`}>
-                                    {isPaused ? '已暂停' : '当前'}
+                                    {isPaused ? t('time.paused') : t('time.current')}
                                 </span>
                                 <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{displayZone} ({zoneOffset})</span>
                             </div>
@@ -487,7 +505,7 @@ const TimestampConverter: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                        <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">当前时间戳 ({unit})</div>
+                        <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">{t('time.current_ts')} ({unit})</div>
                         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-2 pl-4 shadow-sm hover:border-primary-300 transition-colors">
                             <span className="font-mono text-xl font-bold text-primary-600">
                                  {unit === 's' ? Math.floor(now / 1000) : now}
@@ -502,27 +520,27 @@ const TimestampConverter: React.FC = () => {
                 <div className="px-6 py-4 bg-gray-50/50 flex flex-wrap gap-x-8 gap-y-4 items-center border-t border-gray-100">
                     <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
                         <Settings2 size={16} />
-                        <span>偏好设置</span>
+                        <span>{t('time.pref')}</span>
                     </div>
                     
                     <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
 
                     <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-400 font-bold uppercase">单位</span>
+                        <span className="text-xs text-gray-400 font-bold uppercase">{t('time.unit')}</span>
                         <div className="flex bg-white rounded-lg border border-gray-200 p-0.5">
-                            <button onClick={() => setUnit('s')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${unit === 's' ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>秒</button>
-                            <button onClick={() => setUnit('ms')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${unit === 'ms' ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>毫秒</button>
+                            <button onClick={() => setUnit('s')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${unit === 's' ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{t('time.second_s')}</button>
+                            <button onClick={() => setUnit('ms')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${unit === 'ms' ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{t('time.millisecond_s')}</button>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-400 font-bold uppercase">时区</span>
+                        <span className="text-xs text-gray-400 font-bold uppercase">{t('time.zone')}</span>
                         <select 
                             value={displayZone}
                             onChange={(e) => setDisplayZone(e.target.value)}
                             className="bg-white border border-gray-200 text-gray-700 text-xs rounded-lg p-1.5 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none"
                         >
-                            <option value={localZone}>本地 ({localZone}) ({getTimezoneOffset(localZone)})</option>
+                            <option value={localZone}>{t('time.local')} ({localZone}) ({getTimezoneOffset(localZone)})</option>
                             <option value="UTC">UTC (+0)</option>
                             {supportedZones.filter(z => z !== 'UTC' && z !== localZone).map(z => <option key={z} value={z}>{z} ({getTimezoneOffset(z)})</option>)}
                         </select>
@@ -536,19 +554,19 @@ const TimestampConverter: React.FC = () => {
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-6">
                         <div className="font-bold text-gray-800 flex items-center gap-3">
-                            <span className="text-lg">时间戳转日期</span>
+                            <span className="text-lg">{t('time.ts_to_date')}</span>
                         </div>
                     </div>
                     
                     <div className="flex-1 flex flex-col gap-5">
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                                <label className="text-xs text-gray-500 font-bold uppercase">输入时间戳</label>
+                                <label className="text-xs text-gray-500 font-bold uppercase">{t('time.input_ts')}</label>
                                 <button 
                                     onClick={() => setInputTs((unit === 's' ? Math.floor(now/1000) : now).toString())}
                                     className="text-xs text-primary-600 hover:text-primary-700 font-medium hover:underline transition-colors"
                                 >
-                                    填入当前时间
+                                    {t('time.fill_current')}
                                 </button>
                             </div>
                             <input 
@@ -565,10 +583,10 @@ const TimestampConverter: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-gray-500 font-bold uppercase">转换结果</label>
+                            <label className="text-xs text-gray-500 font-bold uppercase">{t('time.result')}</label>
                             <div className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center justify-between group">
                                 <span className={`font-mono font-medium break-all ${tsToDateResult ? 'text-gray-900' : 'text-gray-400 italic'}`}>
-                                    {tsToDateResult || '等待输入...'}
+                                    {tsToDateResult || t('common.waiting')}
                                 </span>
                                 {tsToDateResult && <CopyBtn text={tsToDateResult} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
                             </div>
@@ -580,14 +598,14 @@ const TimestampConverter: React.FC = () => {
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-6">
                         <div className="font-bold text-gray-800 flex items-center gap-3">
-                            <span className="text-lg">日期转时间戳</span>
+                            <span className="text-lg">{t('time.date_to_ts')}</span>
                         </div>
                     </div>
 
                     <div className="flex-1 flex flex-col gap-5">
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                                <label className="text-xs text-gray-500 font-bold uppercase">选择日期时间</label>
+                                <label className="text-xs text-gray-500 font-bold uppercase">{t('time.select_date')}</label>
                                 <button 
                                     onClick={() => {
                                         // Set to current local time ISO string sliced to minutes
@@ -597,7 +615,7 @@ const TimestampConverter: React.FC = () => {
                                     }}
                                     className="text-xs text-primary-600 hover:text-primary-700 font-medium hover:underline transition-colors"
                                 >
-                                    填入当前时间
+                                    {t('time.fill_current')}
                                 </button>
                             </div>
                             <input 
@@ -614,10 +632,10 @@ const TimestampConverter: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-gray-500 font-bold uppercase">转换结果</label>
+                            <label className="text-xs text-gray-500 font-bold uppercase">{t('time.result')}</label>
                             <div className="w-full p-4 bg-purple-50/50 border border-purple-100 rounded-xl flex items-center justify-between group">
                                 <span className={`font-mono font-medium break-all ${dateToTsResult ? 'text-gray-900' : 'text-gray-400 italic'}`}>
-                                    {dateToTsResult || '等待输入...'}
+                                    {dateToTsResult || t('common.waiting')}
                                 </span>
                                 {dateToTsResult && <CopyBtn text={dateToTsResult} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
                             </div>
@@ -629,17 +647,18 @@ const TimestampConverter: React.FC = () => {
             {/* 4. Duration Calculator */}
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
                 <div className="flex items-center gap-3 font-bold text-gray-900 mb-8 pb-4 border-b border-gray-100">
-                    <span className="text-lg">时间差计算</span>
+                    <span className="text-lg">{t('time.duration')}</span>
                 </div>
                 
                 <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
                     <div className="flex-1 w-full space-y-3">
-                        <label className="text-xs text-gray-500 font-bold uppercase pl-1">开始时间</label>
+                        <label className="text-xs text-gray-500 font-bold uppercase pl-1">{t('time.start')}</label>
                         <TimeInput 
                             mode={startMode} 
                             val={startVal} 
                             onChange={setStartVal} 
                             onModeChange={setStartMode} 
+                            t={t}
                         />
                     </div>
                     
@@ -649,12 +668,13 @@ const TimestampConverter: React.FC = () => {
                     </div>
 
                     <div className="flex-1 w-full space-y-3">
-                        <label className="text-xs text-gray-500 font-bold uppercase pl-1">结束时间</label>
+                        <label className="text-xs text-gray-500 font-bold uppercase pl-1">{t('time.end')}</label>
                         <TimeInput 
                             mode={endMode} 
                             val={endVal} 
                             onChange={setEndVal} 
-                            onModeChange={setEndMode} 
+                            onModeChange={setEndMode}
+                            t={t}
                         />
                     </div>
                 </div>
@@ -662,10 +682,10 @@ const TimestampConverter: React.FC = () => {
                 <div className="mt-8">
                      <div className="w-full p-6 bg-gray-50 border border-gray-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                          <span className="text-sm font-bold text-gray-600 uppercase tracking-wide flex items-center gap-2">
-                             相差时长
+                             {t('time.diff')}
                          </span>
                          <span className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
-                             {diffResult || <span className="text-gray-300 font-normal italic">等待计算...</span>}
+                             {diffResult || <span className="text-gray-300 font-normal italic">{t('common.waiting')}</span>}
                          </span>
                      </div>
                 </div>
@@ -674,7 +694,7 @@ const TimestampConverter: React.FC = () => {
             {/* 5. Unified Lunar Calendar Converter */}
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
                 <div className="flex items-center gap-3 font-bold text-gray-900 mb-8 pb-4 border-b border-gray-100">
-                    <span className="text-lg">公历 / 农历 互转</span>
+                    <span className="text-lg">{t('time.lunar_conv')}</span>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
@@ -683,12 +703,12 @@ const TimestampConverter: React.FC = () => {
                     <div className="flex-1 p-6 bg-orange-50/30 rounded-2xl border border-orange-100 flex flex-col gap-6">
                         <div className="flex items-center gap-2 text-orange-700 font-bold">
                             <Sun size={20} />
-                            <span>公历 (Solar)</span>
+                            <span>{t('time.solar')}</span>
                         </div>
                         
                         <div className="flex-1 flex flex-col justify-center space-y-4">
                             <div className="flex justify-between items-baseline">
-                                <label className="text-xs text-gray-500 font-bold uppercase">选择日期</label>
+                                <label className="text-xs text-gray-500 font-bold uppercase">{t('time.select_date')}</label>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-white bg-orange-400 px-2 py-0.5 rounded-full shadow-sm">{solarWeekday}</span>
                                     {solarZodiac && (
@@ -720,13 +740,13 @@ const TimestampConverter: React.FC = () => {
                     <div className="flex-1 p-6 bg-blue-50/30 rounded-2xl border border-blue-100 flex flex-col gap-6">
                         <div className="flex items-center gap-2 text-blue-700 font-bold">
                             <Moon size={20} />
-                            <span>农历 (Lunar)</span>
+                            <span>{t('time.lunar')}</span>
                         </div>
 
                         <div className="flex-1 flex flex-col gap-6">
                             <div className="flex flex-wrap gap-3">
                                 <div className="flex-1 min-w-[90px]">
-                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1.5 block">年</label>
+                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1.5 block">{t('time.year')}</label>
                                     <div className="relative">
                                         <input 
                                             type="number"
@@ -734,11 +754,11 @@ const TimestampConverter: React.FC = () => {
                                             onChange={(e) => handleLunarChange('y', parseInt(e.target.value))}
                                             className="w-full p-2.5 pl-3 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-gray-800"
                                         />
-                                        <span className="absolute right-3 top-2.5 text-gray-400 text-sm">年</span>
+                                        <span className="absolute right-3 top-2.5 text-gray-400 text-sm">{t('time.year')}</span>
                                     </div>
                                 </div>
                                 <div className="w-[110px]">
-                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1.5 block">月</label>
+                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1.5 block">{t('time.month')}</label>
                                     <select 
                                         value={lunarMonth} 
                                         onChange={(e) => handleLunarChange('m', parseInt(e.target.value))}
@@ -750,14 +770,14 @@ const TimestampConverter: React.FC = () => {
                                     </select>
                                 </div>
                                 <div className="w-[90px]">
-                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1.5 block">日</label>
+                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1.5 block">{t('time.day')}</label>
                                     <select 
                                         value={lunarDay} 
                                         onChange={(e) => handleLunarChange('d', parseInt(e.target.value))}
                                         className="w-full p-2.5 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-gray-800 cursor-pointer"
                                     >
                                         {Array.from({length: 30}, (_, i) => i + 1).map(d => (
-                                            <option key={d} value={d}>{d}日</option>
+                                            <option key={d} value={d}>{d}{t('time.day')}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -772,7 +792,7 @@ const TimestampConverter: React.FC = () => {
                                         onChange={(e) => handleLunarChange('leap', e.target.checked)}
                                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300 cursor-pointer"
                                     />
-                                    <span className="text-sm text-gray-600 group-hover:text-blue-700 transition-colors">闰月</span>
+                                    <span className="text-sm text-gray-600 group-hover:text-blue-700 transition-colors">{t('time.leap')}</span>
                                 </label>
                             </div>
 
@@ -784,7 +804,7 @@ const TimestampConverter: React.FC = () => {
                                         {lunarText}
                                     </div>
                                     <div className="text-sm text-gray-500 mt-2 font-medium flex items-center flex-wrap gap-2">
-                                        <span className="bg-orange-100 text-orange-800 px-2.5 py-0.5 rounded-md text-xs border border-orange-200/50">{zodiac}年</span>
+                                        <span className="bg-orange-100 text-orange-800 px-2.5 py-0.5 rounded-md text-xs border border-orange-200/50">{zodiac}{t('time.year')}</span>
                                         {lunarGanZhiFull && (
                                             <>
                                                 <span className="text-gray-300">•</span>

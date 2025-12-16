@@ -3,35 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Globe, Play, Loader2, AlertTriangle, CheckCircle2, XCircle, Clock, Info, Wifi, Server, RotateCw, MapPin, Sliders, Lock, Hash, Activity, ArrowUp, ArrowDown, Route, ChevronDown, BarChart2 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // --- Constants ---
 const API_BASE = 'https://api.globalping.io/v1';
-
-// Available Regions
-const AVAILABLE_REGIONS = [
-    { id: 'world', label: '全球随机 (Global Random)', type: 'magic' },
-    // Continents
-    { id: 'AS', label: '亚太 (Asia)', type: 'continent' },
-    { id: 'EU', label: '欧洲 (Europe)', type: 'continent' },
-    { id: 'NA', label: '北美 (North America)', type: 'continent' },
-    { id: 'OC', label: '大洋洲 (Oceania)', type: 'continent' },
-    { id: 'SA', label: '南美 (South America)', type: 'continent' },
-    { id: 'AF', label: '非洲 (Africa)', type: 'continent' },
-    // Countries
-    { id: 'CN', label: '中国 (CN)', type: 'country' },
-    { id: 'HK', label: '香港 (HK)', type: 'country' },
-    { id: 'TW', label: '台湾 (TW)', type: 'country' },
-    { id: 'JP', label: '日本 (JP)', type: 'country' },
-    { id: 'SG', label: '新加坡 (SG)', type: 'country' },
-    { id: 'US', label: '美国 (US)', type: 'country' },
-    { id: 'KR', label: '韩国 (KR)', type: 'country' },
-    { id: 'DE', label: '德国 (DE)', type: 'country' },
-    { id: 'GB', label: '英国 (UK)', type: 'country' },
-    { id: 'FR', label: '法国 (FR)', type: 'country' },
-    { id: 'RU', label: '俄罗斯 (RU)', type: 'country' },
-    { id: 'BR', label: '巴西 (BR)', type: 'country' },
-    { id: 'IN', label: '印度 (IN)', type: 'country' },
-];
 
 // --- Types ---
 
@@ -88,18 +63,16 @@ interface HistoryData {
 
 // --- Helpers ---
 
-const getCountryName = (code: string) => {
-    if (!code || code === 'world') return '全球';
+const getCountryName = (code: string, lang: string) => {
+    if (!code || code === 'world') return lang === 'zh' ? '全球' : 'Global';
     try {
-        return new Intl.DisplayNames(['zh-CN'], { type: 'region' }).of(code) || code;
+        return new Intl.DisplayNames([lang === 'zh' ? 'zh-CN' : 'en-US'], { type: 'region' }).of(code) || code;
     } catch (e) {
         return code;
     }
 };
 
 const FlagIcon: React.FC<{ code: string; type?: string; className?: string }> = ({ code, type, className = "" }) => {
-    // Tooltip removed as requested
-    // Handle Continents & World with Globe Icon
     if (!code || code === 'world' || type === 'magic' || type === 'continent') {
         let colorClass = "text-blue-500";
         if (code === 'AS') colorClass = "text-orange-500";
@@ -129,7 +102,9 @@ const ResultRow: React.FC<{
     res: NodeResult;
     type: CheckType;
     getLatencyColorClass: (latency?: number) => string;
-}> = ({ res, type, getLatencyColorClass }) => {
+    t: any;
+    lang: string;
+}> = ({ res, type, getLatencyColorClass, t, lang }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     let bgClass = 'bg-white hover:bg-gray-50';
@@ -149,9 +124,9 @@ const ResultRow: React.FC<{
         latencyColor = 'text-red-500';
     }
 
-    const cnName = getCountryName(res.location.country);
+    const cnName = getCountryName(res.location.country, lang);
     const displayLoc = res.location.country === 'world' 
-        ? '全球 (Global)' 
+        ? t('check.global_random')
         : `${cnName} (${res.location.country}) - ${res.location.city}`;
 
     const hasTracerouteData = (type === 'traceroute' || type === 'mtr') && res.status === 'success' && res.data.hops && res.data.hops.length > 0;
@@ -169,7 +144,6 @@ const ResultRow: React.FC<{
                 {/* Left: Flag & Location Info - Fixed Width */}
                 <div className="flex items-center gap-3 w-60 sm:w-80 shrink-0 overflow-hidden">
                     <div className="w-8 h-6 flex items-center justify-center bg-gray-50 border border-black/5 rounded shadow-sm shrink-0">
-                        {/* Result always uses country code from probe data, so type is undefined (default to country) */}
                         <FlagIcon code={res.location.country} className="w-full h-full object-cover rounded-[1px]" />
                     </div>
                     
@@ -188,15 +162,15 @@ const ResultRow: React.FC<{
                     {res.status === 'pending' ? (
                         <div className="flex items-center gap-1.5 text-gray-400 text-xs">
                             <Loader2 size={12} className="animate-spin" />
-                            <span>检测中...</span>
+                            <span>{t('check.checking')}</span>
                         </div>
                     ) : res.status === 'error' ? (
                         <div className="flex flex-col min-w-0">
                             <span className="text-red-500 text-xs font-medium truncate" title={res.errorMsg}>
-                                {res.errorMsg ? res.errorMsg.split('\n')[0] : '检测失败'}
+                                {res.errorMsg ? res.errorMsg.split('\n')[0] : t('common.error')}
                             </span>
                             {res.errorMsg && res.errorMsg.includes('\n') && (
-                                <span className="text-[9px] text-red-300 truncate">点击展开查看详情</span>
+                                <span className="text-[9px] text-red-300 truncate">{t('check.error_detail')}...</span>
                             )}
                         </div>
                     ) : (
@@ -215,19 +189,19 @@ const ResultRow: React.FC<{
                                                     <span className="truncate select-all">{res.data.answers[0].value}</span>
                                                 </div>
 
-                                                <div className="hidden sm:flex items-center gap-1 text-[10px] text-gray-500 font-medium px-1.5 py-0.5 rounded border border-gray-100 bg-gray-50 shrink-0" title={`TTL: ${res.data.answers[0].ttl}秒`}>
+                                                <div className="hidden sm:flex items-center gap-1 text-[10px] text-gray-500 font-medium px-1.5 py-0.5 rounded border border-gray-100 bg-gray-50 shrink-0" title={`TTL: ${res.data.answers[0].ttl}s`}>
                                                     <Clock size={10} className="text-gray-400"/>
                                                     <span>{res.data.answers[0].ttl}s</span>
                                                 </div>
 
                                                 {res.data.answers.length > 1 && (
-                                                    <span className="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full" title={`共 ${res.data.answers.length} 条记录`}>
+                                                    <span className="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full" title={`+${res.data.answers.length - 1} more`}>
                                                         +{res.data.answers.length - 1}
                                                     </span>
                                                 )}
                                             </>
                                         ) : (
-                                            <span className="text-gray-400 text-xs">无 DNS 记录</span>
+                                            <span className="text-gray-400 text-xs">No DNS Records</span>
                                         )}
                                     </div>
                                 ) : type === 'http' ? (
@@ -239,7 +213,7 @@ const ResultRow: React.FC<{
 
                                         {/* Resolved IP */}
                                         {res.data.resolvedAddress && (
-                                            <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`解析 IP: ${res.data.resolvedAddress}`}>
+                                            <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0">
                                                 <Hash size={12} className="text-gray-400"/>
                                                 {res.data.resolvedAddress}
                                             </div>
@@ -247,7 +221,7 @@ const ResultRow: React.FC<{
 
                                         {/* TLS Info */}
                                         {res.data.tls && (
-                                            <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 text-[10px] font-medium shrink-0" title={`加密协议: ${res.data.tls.protocol} (${res.data.tls.cipherName || res.data.tls.cipher})`}>
+                                            <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 text-[10px] font-medium shrink-0">
                                                 <Lock size={10} />
                                                 <span>{res.data.tls.protocol}</span>
                                             </div>
@@ -267,7 +241,7 @@ const ResultRow: React.FC<{
                                 ) : type === 'traceroute' ? (
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         {/* Target IP */}
-                                        <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`目标 IP: ${res.data.resolvedAddress}`}>
+                                        <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`IP: ${res.data.resolvedAddress}`}>
                                             <Hash size={12} className="text-gray-400"/>
                                             {res.data.resolvedAddress || 'N/A'}
                                         </div>
@@ -281,7 +255,7 @@ const ResultRow: React.FC<{
                                 ) : type === 'mtr' ? (
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         {/* Target IP */}
-                                        <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`目标 IP: ${res.data.resolvedAddress}`}>
+                                        <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`IP: ${res.data.resolvedAddress}`}>
                                             <Hash size={12} className="text-gray-400"/>
                                             {res.data.resolvedAddress || 'N/A'}
                                         </div>
@@ -318,7 +292,7 @@ const ResultRow: React.FC<{
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         {/* Resolved IP */}
                                         {res.data.resolvedAddress && (
-                                            <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`解析 IP: ${res.data.resolvedAddress}`}>
+                                            <div className="flex items-center gap-1 text-gray-500 font-mono text-[11px] shrink-0" title={`IP: ${res.data.resolvedAddress}`}>
                                                 <Hash size={12} className="text-gray-400"/>
                                                 {res.data.resolvedAddress}
                                             </div>
@@ -330,7 +304,7 @@ const ResultRow: React.FC<{
                                                 (res.data.stats.loss || 0) === 0 
                                                     ? 'bg-green-50 text-green-600 border-green-100' 
                                                     : 'bg-red-50 text-red-600 border-red-100'
-                                            }`} title={`丢包率: ${res.data.stats.loss?.toFixed(0)}%`}>
+                                            }`} title={`${t('check.loss')}: ${res.data.stats.loss?.toFixed(0)}%`}>
                                                 <Activity size={10} />
                                                 <span>{res.data.stats.loss?.toFixed(0)}%</span>
                                             </div>
@@ -388,7 +362,7 @@ const ResultRow: React.FC<{
                         <div className="p-3 bg-red-50 border border-red-100 rounded text-xs font-mono text-red-700 whitespace-pre-wrap break-all relative">
                             <div className="font-bold mb-1 text-red-800 flex items-center gap-2">
                                 <AlertTriangle size={12} />
-                                错误详情 (Raw Output)
+                                {t('check.error_detail')}
                             </div>
                             {res.errorMsg}
                         </div>
@@ -487,6 +461,8 @@ const ResultRow: React.FC<{
 // --- Component ---
 
 const CheckHost: React.FC = () => {
+  const { t, language } = useLanguage();
+  
   // Persistence: Store history for each type
   const [savedHistory, setSavedHistory] = useLocalStorage<Record<string, HistoryData>>('tool-checkhost-history', {});
   
@@ -516,6 +492,32 @@ const CheckHost: React.FC = () => {
   const pollTimerRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const rateLimitTimerRef = useRef<number | null>(null);
+
+  // Available Regions Definition (Moved inside to access t)
+  const AVAILABLE_REGIONS = [
+    { id: 'world', label: t('check.global_random'), type: 'magic' },
+    // Continents
+    { id: 'AS', label: t('check.asia'), type: 'continent' },
+    { id: 'EU', label: t('check.europe'), type: 'continent' },
+    { id: 'NA', label: t('check.na'), type: 'continent' },
+    { id: 'OC', label: t('check.oc'), type: 'continent' },
+    { id: 'SA', label: t('check.sa'), type: 'continent' },
+    { id: 'AF', label: t('check.africa'), type: 'continent' },
+    // Countries
+    { id: 'CN', label: t('check.china'), type: 'country' },
+    { id: 'HK', label: t('check.hk'), type: 'country' },
+    { id: 'TW', label: t('check.tw'), type: 'country' },
+    { id: 'JP', label: t('check.jp'), type: 'country' },
+    { id: 'SG', label: t('check.sg'), type: 'country' },
+    { id: 'US', label: t('check.us'), type: 'country' },
+    { id: 'KR', label: t('check.kr'), type: 'country' },
+    { id: 'DE', label: t('check.de'), type: 'country' },
+    { id: 'GB', label: t('check.gb'), type: 'country' },
+    { id: 'FR', label: t('check.fr'), type: 'country' },
+    { id: 'RU', label: t('check.ru'), type: 'country' },
+    { id: 'BR', label: t('check.br'), type: 'country' },
+    { id: 'IN', label: t('check.in'), type: 'country' },
+  ];
 
   // Cleanup & Initial Fetch
   useEffect(() => {
@@ -552,9 +554,6 @@ const CheckHost: React.FC = () => {
       
       // Update protocol when switching to HTTP
       if (newType === 'http') {
-          // If we have history (data.host exists implies we used it before), use saved protocol. 
-          // If no history (or just default empty obj), default to HTTPS.
-          // Note: getInitialData returns {} if not found.
           setProtocol(data.protocol || 'HTTPS');
       }
 
@@ -650,9 +649,6 @@ const CheckHost: React.FC = () => {
     if (!host.trim()) return;
     
     let target = host.trim();
-    
-    // Safety check: remove protocol if user pasted it and somehow bypassed onChange logic
-    // or if they are in non-http mode but still pasted a URL.
     target = target.replace(/^[a-zA-Z]+:\/\//, '');
     target = target.split('/')[0];
     target = target.replace(/:\d+$/, '');
@@ -661,13 +657,14 @@ const CheckHost: React.FC = () => {
     setResults([]);
     setError(null);
     setIsChecking(true);
-    setStatusMsg('正在连接 Globalping 网络...');
+    setStatusMsg(t('check.checking'));
     setProgress(5);
 
     abortControllerRef.current = new AbortController();
 
     try {
       const locationPayload = selectedRegions.map(id => {
+          // Note: using static list from component scope is fine as logic is same
           const def = AVAILABLE_REGIONS.find(r => r.id === id);
           if (!def) return { magic: "world" };
           if (def.type === 'magic') return { magic: "world" };
@@ -703,12 +700,12 @@ const CheckHost: React.FC = () => {
       updateRateLimit();
 
       if (!res.ok) {
-          if (res.status === 429) throw new Error("请求过于频繁或配额不足 (429)。");
+          if (res.status === 429) throw new Error("429: Quota Exceeded");
           if (res.status === 422) {
               const errData = await res.json().catch(() => ({}));
-              if (errData.error?.type === 'too_many_probes') throw new Error(`请求的节点数(${probeCount})过多，当前可用不足。`);
-              if (errData.error?.params?.target) throw new Error("目标地址格式无效。");
-              throw new Error("参数校验失败。");
+              if (errData.error?.type === 'too_many_probes') throw new Error(`Too many probes (${probeCount})`);
+              if (errData.error?.params?.target) throw new Error("Invalid target");
+              throw new Error("Validation Error");
           }
           throw new Error(`API Error: ${res.status}`);
       }
@@ -716,9 +713,9 @@ const CheckHost: React.FC = () => {
       const data = await res.json();
       const measurementId = data.id;
 
-      if (!measurementId) throw new Error("未获取到测速 ID");
+      if (!measurementId) throw new Error("No ID returned");
 
-      setStatusMsg(`任务下发成功 (${probeCount} 节点)，正在等待响应...`);
+      setStatusMsg(t('check.success_msg', { nodes: probeCount }));
       setProgress(10);
 
       pollResults(measurementId);
@@ -726,7 +723,7 @@ const CheckHost: React.FC = () => {
     } catch (err: any) {
         if (err.name === 'AbortError') return;
         console.error(err);
-        setError(err.message || '检测启动失败');
+        setError(err.message || t('common.error'));
         setIsChecking(false);
     }
   };
@@ -756,7 +753,7 @@ const CheckHost: React.FC = () => {
 
               if (raw.status === 'in-progress') {
                   status = 'pending';
-                  summary = 'Waiting...';
+                  summary = t('common.waiting');
               } else if (raw.status === 'failed') {
                   status = 'error';
                   summary = 'Failed';
@@ -855,7 +852,7 @@ const CheckHost: React.FC = () => {
           setProgress(p);
 
           if (data.status === 'finished') {
-              setStatusMsg(`检测完成，共获取 ${processedResults.length} 个节点数据`);
+              setStatusMsg(t('check.done_msg', { nodes: processedResults.length }));
               setIsChecking(false);
           } else {
               pollTimerRef.current = window.setTimeout(() => {
@@ -927,14 +924,14 @@ const CheckHost: React.FC = () => {
            <div className="flex flex-col md:flex-row gap-4">
                {/* Host */}
                <div className="flex-[3]">
-                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">目标地址 (Host)</label>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">{t('check.target')}</label>
                    <div className="relative flex">
                        {/* Protocol Selector for HTTP */}
                        {type === 'http' && (
                            <select 
                                value={protocol}
                                onChange={(e) => setProtocol(e.target.value as 'HTTP' | 'HTTPS')}
-                               className="pl-3 pr-8 py-2.5 bg-gray-50 border border-r-0 border-gray-300 rounded-l-lg text-sm focus:ring-0 focus:border-gray-300 outline-none appearance-none cursor-pointer font-bold text-gray-600 w-24 shrink-0"
+                               className="pl-3 pr-8 py-2.5 bg-gray-50 border border-r-0 border-gray-300 rounded-l-lg text-sm focus:ring-0 focus:border-gray-200 outline-none appearance-none cursor-pointer font-bold text-gray-600 w-24 shrink-0"
                            >
                                <option value="HTTP">http://</option>
                                <option value="HTTPS">https://</option>
@@ -960,7 +957,7 @@ const CheckHost: React.FC = () => {
 
                {/* Port */}
                <div className="flex-1 min-w-[100px] max-w-[140px]">
-                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">端口</label>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">{t('check.port')}</label>
                    <div className="relative">
                        <input 
                             type="text" 
@@ -977,7 +974,7 @@ const CheckHost: React.FC = () => {
 
                {/* Type */}
                <div className="flex-1 min-w-[140px]">
-                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">类型</label>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">{t('check.type')}</label>
                    <div className="relative">
                        <select 
                             value={type}
@@ -1008,7 +1005,7 @@ const CheckHost: React.FC = () => {
                         className="w-full md:w-auto px-6 py-2.5 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                    >
                        {isChecking ? <Loader2 className="animate-spin" size={18} /> : <Play size={18} />}
-                       {isChecking ? '检测中...' : '开始'}
+                       {isChecking ? t('check.checking') : t('check.start')}
                    </button>
                </div>
            </div>
@@ -1018,7 +1015,7 @@ const CheckHost: React.FC = () => {
                <div className="flex-1">
                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1 flex items-center gap-2">
                        <MapPin size={12} />
-                       测试区域 (多选)
+                       {t('check.regions')}
                    </label>
                    <div className="flex flex-wrap gap-2">
                        {AVAILABLE_REGIONS.map(region => {
@@ -1044,7 +1041,7 @@ const CheckHost: React.FC = () => {
 
                <div className="md:w-64 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center justify-between">
-                       <div className="flex items-center gap-2"><Sliders size={12}/> 节点数量</div>
+                       <div className="flex items-center gap-2"><Sliders size={12}/> {t('check.nodes')}</div>
                        <span className="text-primary-600 font-mono text-sm">{probeCount}</span>
                    </label>
                    <input 
@@ -1068,18 +1065,18 @@ const CheckHost: React.FC = () => {
            <div className="pt-2 mt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-500">
                <div className="flex items-center gap-1.5">
                    <Info size={14} className="text-blue-500" />
-                   <span>Globalping 分布式网络</span>
+                   <span>{t('tool.check_host.desc').split(' ').slice(0, 3).join(' ')}...</span>
                </div>
                
                {rateLimit && (
                    <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5">
                             <Server size={14} className="text-gray-400" />
-                            <span>配额: <span className={`font-mono font-bold ${getQuotaColor()}`}>{rateLimit.remaining}</span>/{rateLimit.limit}</span>
+                            <span>{t('check.quota')}: <span className={`font-mono font-bold ${getQuotaColor()}`}>{rateLimit.remaining}</span>/{rateLimit.limit}</span>
                         </div>
-                        <div className="flex items-center gap-1.5" title="每秒自动刷新">
+                        <div className="flex items-center gap-1.5">
                             <Clock size={14} className={rateLimit.reset <= 5 ? "text-red-500 animate-pulse" : "text-gray-400"} />
-                            <span>重置: <span className="font-mono font-medium text-gray-700">{formatTime(rateLimit.reset)}</span></span>
+                            <span>{t('check.reset')}: <span className="font-mono font-medium text-gray-700">{formatTime(rateLimit.reset)}</span></span>
                         </div>
                    </div>
                )}
@@ -1113,6 +1110,8 @@ const CheckHost: React.FC = () => {
                         res={res} 
                         type={type}
                         getLatencyColorClass={getLatencyColorClass} 
+                        t={t}
+                        lang={language}
                    />
                ))}
            </div>
@@ -1121,7 +1120,7 @@ const CheckHost: React.FC = () => {
        {!isChecking && results.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center py-12 text-gray-300">
                 <Globe size={64} strokeWidth={1} className="mb-4 text-gray-200" />
-                <p>输入域名或 IP，调用全球探针进行检测</p>
+                <p>{t('check.init_msg')}</p>
             </div>
        )}
     </div>

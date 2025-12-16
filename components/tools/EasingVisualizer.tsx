@@ -1,5 +1,7 @@
+
 /// <reference lib="dom" />
 import React, { useRef, useEffect, useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // --- Math Formulas ---
 
@@ -352,11 +354,12 @@ const EasingCard: React.FC<{ title: string, fn: (t: number) => number }> = ({ ti
 };
 
 const EasingVisualizer: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <div className="space-y-10 animate-fade-in pb-10 w-full">
       <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm border border-blue-100">
         <p>
-            展示了常见的缓动函数曲线。鼠标悬停在卡片上，右侧的垂直进度条将演示该缓动效果的速度变化。
+            {t('easing.desc')}
         </p>
       </div>
 
