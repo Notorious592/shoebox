@@ -1,7 +1,6 @@
-
 # LOLO' Shoebox (简体中文)
 
-一个注重隐私保护的开发者全能工具箱，拥有整洁的 UI 设计。它集成了文本、图像、音视频处理等多种工具，绝大部分操作均在浏览器本地完成。
+一个注重隐私保护的开发者全能工具箱，拥有整洁好看的 UI 设计。它集成了文本、图像、音视频处理等多种工具，绝大部分操作均在浏览器本地完成。
 
 > **说明**: 本项目代码与内容完全由 **Google Gemini** 生成。
 
@@ -22,6 +21,7 @@
 *   **影音媒体**:
     *   **音频转换**: 可视化波形剪辑、裁剪、淡入淡出及格式转换。
     *   **视频命令生成**: 本地分析视频元数据（编码、码率等），生成最佳 FFmpeg 压缩命令。
+    *   **音乐标签**: 告别播放器乱码。一键修复音乐元数据，支持自动补全封面与歌词。
 *   **文本与数据**:
     *   **时间与日期**: 实时时间戳、日期格式转换、公农历互转及时间差计算。
     *   **生成器**: 强密码生成、UUID (v4/v5) 生成、MD5 哈希计算。
@@ -42,7 +42,7 @@
 
 ### 安装步骤
 
-1.  **克隆项目**
+1.  **克隆仓库**
     ```bash
     git clone https://github.com/lolo1208/shoebox.git
     cd shoebox
@@ -54,15 +54,15 @@
     ```
 
 3.  **配置 AI 模型 (重要)**
-    **智能抠图**功能需要本地模型文件才能离线运行。
+    **智能抠图** 工具需要本地 AI 模型文件才能离线运行。
     
-    1.  请前往以下地址下载模型包：
+    1.  从以下地址下载模型包：
         `https://staticimgly.com/@imgly/background-removal-data/1.7.0/package.tgz`
-    2.  解压下载的文件。
-    3.  在项目根目录下创建文件夹路径：`public/models/imgly-bg-data/`。
-    4.  将解压后包内的 `dist` 文件夹及其所有内容复制到该目录下。
+    2.  解压压缩包。
+    3.  在项目根目录下创建文件夹 `public/models/imgly-bg-data/`。
+    4.  将解压出的 `dist` 文件夹复制到 `public/models/imgly-bg-data/` 中。
     
-    **文件目录结构应如下所示：**
+    **目录结构示例：**
     ```text
     /shoebox
     ├── public/
@@ -79,15 +79,15 @@
     ```
     在浏览器中打开 `http://localhost:5173` 即可使用。
 
-## 📦 打包构建
+## 📦 生产环境构建
 
-构建生产环境版本：
+执行以下命令进行构建：
 
 ```bash
 npm run build
 ```
 
-构建完成后会生成 `dist` 目录。您可以将该目录部署到任何静态网站托管服务（如 GitHub Pages, Vercel, Nginx 等）。
+构建完成后，`dist` 文件夹内即为编译好的静态资源。您可以将其部署到任何静态托管服务（GitHub Pages, Vercel, Netlify, Nginx 等）。
 
 ## 🛠️ 技术栈
 
@@ -96,14 +96,14 @@ npm run build
 - **样式**: [Tailwind CSS](https://tailwindcss.com/)
 - **图标**: [Lucide React](https://lucide.dev/)
 - **核心库**:
-    - `ffmpeg.wasm` & `mediainfo.js` (多媒体处理)
+    - `ffmpeg.wasm`, `mediainfo.js` & `browser-id3-writer` (多媒体处理)
     - `@imgly/background-removal` (AI 视觉)
     - `html2canvas` & `upng-js` (图像处理)
-    - `lunar-javascript` (日历转换)
+    - `lunar-javascript` (公农历转换)
 - **外部 API**:
-    - **Piston API** (`https://emkc.org/api/v2/piston`): 用于 **在线代码运行** 工具，提供安全的沙箱执行环境。
-    - **Globalping API** (`https://api.globalping.io/v1`): 用于 **全球网络检测** 工具，提供分布式网络探针。
+    - **Piston API** (`https://emkc.org/api/v2/piston`): 用于 **在线代码运行** 工具的安全执行。
+    - **Globalping API** (`https://api.globalping.io/v1`): 用于 **全球网络检测** 工具的分布式测试。
 
 ## 📄 开源协议
 
-本项目基于 GNU General Public License v3.0 协议开源。详情请参阅 [LICENSE](./LICENSE) 文件。
+本项目采用 GNU General Public License v3.0 协议开源。详情请参阅 [LICENSE](./LICENSE) 文件。

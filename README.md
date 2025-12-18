@@ -22,6 +22,7 @@ A comprehensive, privacy-first developer toolbox designed with a clean UI. It fe
 *   **Media**:
     *   **Audio Converter**: Edit, trim, fade, and convert audio files.
     *   **Video Command Generator**: Analyze video metadata locally and generate FFmpeg compression commands.
+    *   **Music Tag Editor**: Fix messy music files instantly. Repair titles, artists, and album info. Auto-fill missing covers and lyrics.
 *   **Text & Data**:
     *   **Time & Date**: Real-time timestamp, date conversion, solar/lunar calendar conversion.
     *   **Generators**: Strong Password Generator, UUID (v4/v5) Generator, MD5 Calculator.
@@ -96,7 +97,7 @@ This will generate a `dist` folder containing the compiled assets. You can deplo
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Core Libraries**:
-    - `ffmpeg.wasm` & `mediainfo.js` (Media processing)
+    - `ffmpeg.wasm`, `mediainfo.js` & `browser-id3-writer` (Media processing)
     - `@imgly/background-removal` (AI Vision)
     - `html2canvas` & `upng-js` (Image processing)
     - `lunar-javascript` (Calendar conversion)

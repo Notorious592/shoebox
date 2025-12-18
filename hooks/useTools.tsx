@@ -25,7 +25,8 @@ import {
   Gauge,
   Network,
   FileText,
-  Film
+  Film,
+  Tags
 } from 'lucide-react';
 import { Category, CategoryId } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -51,6 +52,7 @@ import TimestampConverter from '../components/tools/TimestampConverter';
 import CodeRunner from '../components/tools/CodeRunner';
 import CheckHost from '../components/tools/CheckHost';
 import SpeedTest from '../components/tools/SpeedTest';
+import MusicTagEditor from '../components/tools/MusicTagEditor';
 
 export const useTools = () => {
   const { t } = useLanguage();
@@ -156,6 +158,14 @@ export const useTools = () => {
           description: t('tool.video_cmd.desc'),
           icon: Film,
           component: <VideoCommandGenerator />,
+          layoutClass: 'w-full'
+        },
+        {
+          id: 'music-tag',
+          name: t('tool.music_tag.name'),
+          description: t('tool.music_tag.desc'),
+          icon: Tags,
+          component: <MusicTagEditor />,
           layoutClass: 'w-full'
         }
       ]
