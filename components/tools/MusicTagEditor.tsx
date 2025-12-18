@@ -528,11 +528,11 @@ const MusicTagEditor: React.FC = () => {
             </div>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-400px)] min-h-[500px]">
+        {/* Main Grid - Removed Fixed height to allow page-level scroll */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px]">
             
-            {/* Left: Search (Scrollable List) */}
-            <div className="lg:col-span-3 bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden shadow-sm h-full">
+            {/* Left: Search (Internal scroll for list ONLY) */}
+            <div className="lg:col-span-3 bg-white border border-gray-200 rounded-xl flex flex-col shadow-sm h-full max-h-[800px]">
                 <div className="p-4 border-b border-gray-100 bg-gray-50 space-y-3 shrink-0">
                     <div className="relative">
                         <input 
@@ -617,9 +617,9 @@ const MusicTagEditor: React.FC = () => {
                 </div>
             </div>
 
-            {/* Middle: Source Details */}
-            <div className="lg:col-span-4 bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden shadow-sm h-full">
-                <div className="p-3 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm flex justify-between items-center shrink-0">
+            {/* Middle: Source Details - No Internal Scroll */}
+            <div className="lg:col-span-4 bg-white border border-gray-200 rounded-xl flex flex-col shadow-sm">
+                <div className="p-3 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm flex justify-between items-center shrink-0 rounded-t-xl">
                     <span>{t('mt.source_info')}</span>
                     {sourceDetail && (
                         <button onClick={applyAll} className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-700 font-medium">
@@ -628,14 +628,14 @@ const MusicTagEditor: React.FC = () => {
                     )}
                 </div>
                 
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex flex-col">
                     {isLoadingDetail ? (
-                        <div className="flex-1 flex items-center justify-center text-gray-400 gap-2">
+                        <div className="py-20 flex items-center justify-center text-gray-400 gap-2">
                             <Loader2 className="animate-spin" size={24} />
                             <span>{t('mt.loading')}</span>
                         </div>
                     ) : detailError ? (
-                        <div className="flex-1 flex flex-col items-center justify-center text-red-400 text-sm gap-2 p-6 text-center">
+                        <div className="py-20 flex flex-col items-center justify-center text-red-400 text-sm gap-2 p-6 text-center">
                             <AlertCircle size={32} strokeWidth={1.5} />
                             <p className="font-medium">{detailError}</p>
                             <button 
@@ -647,8 +647,8 @@ const MusicTagEditor: React.FC = () => {
                             </button>
                         </div>
                     ) : sourceDetail ? (
-                        <div className="flex flex-col h-full">
-                            <div className="shrink-0 p-4 pb-0 space-y-4">
+                        <div className="flex flex-col">
+                            <div className="p-4 space-y-4">
                                 <div className="flex flex-col items-center">
                                     <div 
                                         className="w-32 h-32 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden mb-2 relative group cursor-zoom-in"
@@ -699,20 +699,20 @@ const MusicTagEditor: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
-                            <div className="flex-1 flex flex-col min-h-0 p-4 pt-2">
-                                <div className="flex justify-between items-center mb-1 shrink-0">
+                            <div className="p-4 pt-2">
+                                <div className="flex justify-between items-center mb-1">
                                     <span className="text-xs font-bold text-gray-500">Lyrics</span>
                                     <button onClick={() => applyField('lyrics', sourceDetail.lyrics)} className="text-xs text-primary-600 hover:underline">{t('mt.apply_lyrics')}</button>
                                 </div>
                                 <textarea 
                                     readOnly 
                                     value={sourceDetail.lyrics} 
-                                    className="flex-1 w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-mono text-gray-600 resize-none overflow-y-auto custom-scrollbar focus:outline-none"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-mono text-gray-600 resize-none h-64 focus:outline-none"
                                 />
                             </div>
                         </div>
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-sm gap-2">
+                        <div className="py-40 flex flex-col items-center justify-center text-gray-300 text-sm gap-2">
                             <AlertCircle size={32} strokeWidth={1.5} />
                             <p>{t('mt.select_tip')}</p>
                         </div>
@@ -720,14 +720,14 @@ const MusicTagEditor: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right: Target Tags */}
-            <div className="lg:col-span-5 bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden shadow-sm h-full">
-                <div className="p-3 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm flex justify-between items-center shrink-0">
+            {/* Right: Target Tags - No Internal Scroll */}
+            <div className="lg:col-span-5 bg-white border border-gray-200 rounded-xl flex flex-col shadow-sm">
+                <div className="p-3 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm flex justify-between items-center shrink-0 rounded-t-xl">
                     <span className="flex items-center gap-2"><Save size={16} className="text-green-600"/> {t('mt.write_data')}</span>
                     {file && <span className="text-xs text-gray-400 font-normal truncate max-w-[150px]">{file.name}</span>}
                 </div>
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    <div className="shrink-0 p-4 pb-0 space-y-4">
+                <div className="flex flex-col">
+                    <div className="p-4 space-y-4">
                         <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-lg border border-gray-100">
                             <div 
                                 className={`w-12 h-12 bg-white border border-gray-200 rounded flex items-center justify-center overflow-hidden shrink-0 ${targetCoverUrl ? 'cursor-zoom-in hover:opacity-90 transition-opacity' : ''}`}
@@ -779,16 +779,16 @@ const MusicTagEditor: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="flex-1 flex flex-col min-h-0 p-4 pt-2">
+                    <div className="p-4 pt-2">
                         <label className="block text-xs font-bold text-gray-500 mb-1 shrink-0">{t('mt.field_lyrics')}</label>
                         <textarea 
                             value={targetTags.lyrics} 
                             onChange={e => applyField('lyrics', e.target.value)} 
-                            className="flex-1 w-full p-2 border border-gray-300 rounded text-xs font-mono focus:ring-1 focus:ring-primary-500 resize-none overflow-y-auto custom-scrollbar" 
+                            className="w-full p-2 border border-gray-300 rounded text-xs font-mono focus:ring-1 focus:ring-primary-500 h-64" 
                         />
                     </div>
                 </div>
-                <div className="shrink-0 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
                     <button 
                         onClick={handleDownload}
                         disabled={!file}
